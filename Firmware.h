@@ -22,8 +22,8 @@
 
 // RS232 variables / buffers {{{
 char sBuffer[16];
-int8 sBufferIndex;
-int1 sBufferFlag;
+unsigned int sBufferIndex;
+unsigned int1 sBufferFlag;
 // }}}
 
 #define DEBUG_SBUFFER
@@ -32,6 +32,7 @@ int1 sBufferFlag;
 #define SET_REG 2
 #define GET_REG 7
 #define ADM_CMD 0
+#define HELP    3
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -68,12 +69,12 @@ typedef struct {
 		int RX3 : 1;
 } sCOR;
 
-int8 command,argument,value;
+unsigned int command,argument,value;
 char argument_name[8];
 
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
-int8 rom cMorseChar[] = {
+unsigned int rom cMorseChar[] = {
 	0b10101010, // 0 (dah dah dah dah dah)	0
 	0b01101010, // 1 (dit dah dah dah dah)	1
 	0b01011010, // 2 (dit dit dah dah dah)	2
@@ -112,16 +113,20 @@ int8 rom cMorseChar[] = {
 	0b10100101 // z (dah dah dit dit)	35
 }; // }}}
 
-#define REG_NAME_SIZE 9
+#define REG_NAME_SIZE 10
 typedef struct sRegMap_t { 
-	int	 *reg_ptr;
-	char reg_name[REG_NAME_SIZE];
-	int	  reg_size;
-} sRegMap;
+	int      reg_name_index;
+	int *	 reg_ptr;
+	int	 default_value;
+};
 
-int8 COR_IN;
-int8 Polarity;
-int8 COR0_GAIN;
+unsigned int COR_IN;
+unsigned int Polarity;
+unsigned int RX_GAIN[16];
+unsigned int AuxIn[3],AuxOut[3];
+unsigned int CORPriority[4];
+
+
 
 //rom char COR_IN_NAME[]="COR_IN";
 //rom char POL_NAME[]="POLARITY";
@@ -129,10 +134,67 @@ int8 COR0_GAIN;
 
 //rom char * rom strPtr=COR_IN_NAME;
 
-rom sRegMap RegMap[]={
-    {&COR0_GAIN,{"C0GAIN"},1},
-	{&Polarity,{"POLARITY"},1},
-	{&COR_IN,{"COR_IN"},1}
+#define DEFAULT_GAIN 32
+
+const char reg_name[][REG_NAME_SIZE]={
+	{"POLARITY"},	// 0
+	{"R0_GAIN0"},	// 1
+	{"R0_GAIN1"},	// 2
+	{"R0_GAIN2"},	// 3
+	{"R0_GAIN3"},	// 4
+	{"R1_GAIN0"},	// 5
+	{"R1_GAIN1"},	// 6
+	{"R1_GAIN2"},	// 7
+	{"R1_GAIN3"},	// 8
+	{"R2_GAIN0"},	// 9
+	{"R2_GAIN1"},	// 10
+	{"R2_GAIN2"},	// 11
+	{"R2_GAIN3"},	// 12
+	{"R3_GAIN0"},	// 13
+	{"R3_GAIN1"},	// 14
+	{"R3_GAIN2"},	// 15
+	{"R3_GAIN3"},	// 16
+	{"AUX_IN0"},	// 17
+	{"AUX_IN1"},	// 18
+	{"AUX_IN2"},	// 19
+	{"AUX_OUT0"},	// 20
+	{"AUX_OUT1"},	// 21
+	{"AUX_OUT2"},	// 22
+	{"COR0_PRI"},	// 23
+	{"COR1_PRI"},	// 24
+	{"COR2_PRI"},	// 25
+	{"COR3_PRI"},	// 26
+};
+
+
+struct sRegMap_t const RegMap[]={
+	{0, &Polarity   ,15},
+	{1, &RX_GAIN[0] ,DEFAULT_GAIN},
+	{2, &RX_GAIN[1] ,DEFAULT_GAIN},
+	{3, &RX_GAIN[2] ,DEFAULT_GAIN},
+	{4, &RX_GAIN[3] ,DEFAULT_GAIN},
+	{5, &RX_GAIN[4] ,DEFAULT_GAIN},
+	{6, &RX_GAIN[5] ,DEFAULT_GAIN},
+	{7, &RX_GAIN[6] ,DEFAULT_GAIN},
+	{8, &RX_GAIN[7] ,DEFAULT_GAIN},
+	{9, &RX_GAIN[8] ,DEFAULT_GAIN},
+	{10,&RX_GAIN[9] ,DEFAULT_GAIN},
+	{11,&RX_GAIN[10],DEFAULT_GAIN},
+	{12,&RX_GAIN[11],DEFAULT_GAIN},
+	{13,&RX_GAIN[12],DEFAULT_GAIN},
+	{14,&RX_GAIN[13],DEFAULT_GAIN},
+	{15,&RX_GAIN[14],DEFAULT_GAIN},
+	{16,&RX_GAIN[15],DEFAULT_GAIN},
+	{17,&AuxIn[0]   ,0},
+	{18,&AuxIn[1]   ,0},
+	{19,&AuxIn[2]   ,0},
+	{20,&AuxOut[0]  ,1},
+	{21,&AuxOut[1]  ,1},
+	{22,&AuxOut[2]  ,1},
+	{23,&CORPriority[0] ,0},
+	{24,&CORPriority[1] ,5},
+	{25,&CORPriority[2] ,5},
+	{26,&CORPriority[3] ,3}
 };
  	
-int RegMapNum=sizeof(RegMap)/sizeof(sRegMap);
+unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

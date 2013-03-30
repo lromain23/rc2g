@@ -16,14 +16,26 @@ void rs232_int (void) { // {{{
 #ifdef DEBUG_SBUFFER
 void debug_sbuffer(void) { // {{{
   sBufferFlag=1;
-  sBuffer="set POLARITY 15\r";
+  sBuffer="set R0_GAIN0 9\r";
 } // }}}
 #endif
+
+void help (void) { // {{{
+  int x,reg_index;
+  int * regPtr;
+  char rname[REG_NAME_SIZE];
+  for(x=0;x<RegMapNum;x++) {
+    reg_index = RegMap[x].reg_name_index;
+	strcpy(rname,reg_name[reg_index]);
+    regPtr=RegMap[x].reg_ptr;
+    printf("%10s %d",rname,*regPtr);
+  }
+} // }}}
 
 void clear_sBuffer(void) { // {{{
 // This function initializes the RS232 serial
 // buffer, index and flag.
-  int x,char_num;
+  unsigned x,char_num;
   char_num = sizeof(sBuffer)/sizeof(char);
   for (x=0;x<char_num;x++) {
     sBuffer[x]='\0';
@@ -68,21 +80,30 @@ void tokenize_sBuffer() { // {{{
   // }}}
 	// Check for "SET" command {{{
   strcpy(smatch_reg,"set");  
-	if ( stricmp(smatch_reg,verb) == 0 ) {
-	  if ( value == -1 ) {
-		  command=GET_REG;
-		} else {
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    if ( value == -1 ) {
+      command=GET_REG;
+    } else {
       command=SET_REG;
-		}
-	} // }}}
+    }
+  } // }}}
+  // Check for "HELP" command {{{
+  strcpy(smatch_reg,"help");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=HELP;
+  } // }}}
 } // }}}
 
 void set_var (void) { // {{{
   // This function sets the specified register if a value is specified.
   // Otherwise it displays it.
+  int *pObj;
   if ( value == -1 ) {
 		printf ("%s %d",argument,value);
   } else {
+// DEBUG HERE!!!
+    pObj=(int *)RegMap[argument].reg_ptr;
+    *pObj=value;
     printf ("Setting %s to %d",argument,value);
   }
 } // }}}
@@ -96,27 +117,39 @@ void romstrcpy(char *dest,rom char *src) { // {{{
 } // }}}
 
 void process_sBuffer(void) { // {{{
-  int reg_id,x;
-  char str[REG_NAME_SIZE];
+  unsigned int x;
+  int reg_index;
   char rname[REG_NAME_SIZE];
+  unsigned int* regPtr;
   tokenize_sBuffer();
 
   // Find matching reg_id
+  argument=-1;
   for(x=0;x<RegMapNum;x++) {
-    romstrcpy(&rname[0],&RegMap[x].reg_name[0]);
-    //read_program_memory(rom_ptr,rname,5);
+//    romstrcpy(&rname[0],&RegMap[x].reg_name[0]);
+    reg_index = RegMap[x].reg_name_index;
+	strcpy(rname,reg_name[reg_index]);
+//    romstrcpy(&rname[0],&reg_name[x]);
     if(stricmp(argument_name,rname)==0) {
 	  argument=x;
 	}
   }
-  if (command==SET_REG) {
-    set_var();
+  if ( argument==-1) {
+    printf ("Error : Invalid argument %s",argument_name);
+  } else {
+    if (command==SET_REG) {
+      set_var();
+    } else if (command==GET_REG) {
+      regPtr=RegMap[argument].reg_ptr;
+      printf("%s %d",argument_name,*regPtr);
+	}
   }
   sBufferFlag=0;
 } // }}}
 
 void main (void) { // {{{
   initialize();
+  unsigned int gain;
 #ifdef DEBUG_SBUFFER
     debug_sbuffer();
 #endif
@@ -127,6 +160,8 @@ void main (void) { // {{{
       process_sBuffer();
       clear_sBuffer();
     }
+	gain = RX_GAIN[1][1];
+	gain = RX_GAIN[1][2];
     // Process RS232 Serial Buffer Flag }}}
   } // End of while(1) main loop
 } // }}}
