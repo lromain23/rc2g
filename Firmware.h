@@ -115,16 +115,17 @@ unsigned int rom cMorseChar[] = {
 
 #define REG_NAME_SIZE 10
 typedef struct sRegMap_t { 
-	int      reg_name_index;
+//	int      reg_name_index;
 	int *	 reg_ptr;
 	int	 default_value;
 };
 
 unsigned int COR_IN;
 unsigned int Polarity;
-unsigned int RX_GAIN[16];
+unsigned int RX_GAIN[4][4];
 unsigned int AuxIn[3],AuxOut[3];
 unsigned int CORPriority[4];
+unsigned int RX_PTT[4];
 
 
 
@@ -164,37 +165,79 @@ const char reg_name[][REG_NAME_SIZE]={
 	{"COR1_PRI"},	// 24
 	{"COR2_PRI"},	// 25
 	{"COR3_PRI"},	// 26
+	{"R0_PTT"},	    // 27
+	{"R1_PTT"},	    // 28
+	{"R2_PTT"},	    // 29
+	{"R3_PTT"},	    // 30
+
 };
 
 
+//struct sRegMap_t const RegMap[]={
+//	{0, &Polarity   ,15},
+//	{1, &RX_GAIN[0][0] ,DEFAULT_GAIN},
+//	{2, &RX_GAIN[0][1] ,DEFAULT_GAIN},
+//	{3, &RX_GAIN[0][2] ,DEFAULT_GAIN},
+//	{4, &RX_GAIN[0][3] ,DEFAULT_GAIN},
+//	{5, &RX_GAIN[1][0] ,DEFAULT_GAIN},
+//	{6, &RX_GAIN[1][1] ,DEFAULT_GAIN},
+//	{7, &RX_GAIN[1][2] ,DEFAULT_GAIN},
+//	{8, &RX_GAIN[1][3] ,DEFAULT_GAIN},
+//	{9, &RX_GAIN[2][0] ,DEFAULT_GAIN},
+//	{10,&RX_GAIN[2][1] ,DEFAULT_GAIN},
+//	{11,&RX_GAIN[2][2],DEFAULT_GAIN},
+//	{12,&RX_GAIN[2][3],DEFAULT_GAIN},
+//	{13,&RX_GAIN[3][0],DEFAULT_GAIN},
+//	{14,&RX_GAIN[3][1],DEFAULT_GAIN},
+//	{15,&RX_GAIN[3][2],DEFAULT_GAIN},
+//	{16,&RX_GAIN[3][3],DEFAULT_GAIN},
+//	{17,&AuxIn[0]   ,0},
+//	{18,&AuxIn[1]   ,0},
+//	{19,&AuxIn[2]   ,0},
+//	{20,&AuxOut[0]  ,1},
+//	{21,&AuxOut[1]  ,1},
+//	{22,&AuxOut[2]  ,1},
+//	{23,&CORPriority[0] ,0},
+//	{24,&CORPriority[1] ,5},
+//	{25,&CORPriority[2] ,5},
+//	{26,&CORPriority[3] ,3}
+//	{26,&RX_PTT[0] ,0x0E},
+//	{26,&RX_PTT[1] ,0x0D},
+//	{26,&RX_PTT[2] ,0x0B},
+//	{26,&RX_PTT[3] ,0x07},
+//};
 struct sRegMap_t const RegMap[]={
-	{0, &Polarity   ,15},
-	{1, &RX_GAIN[0] ,DEFAULT_GAIN},
-	{2, &RX_GAIN[1] ,DEFAULT_GAIN},
-	{3, &RX_GAIN[2] ,DEFAULT_GAIN},
-	{4, &RX_GAIN[3] ,DEFAULT_GAIN},
-	{5, &RX_GAIN[4] ,DEFAULT_GAIN},
-	{6, &RX_GAIN[5] ,DEFAULT_GAIN},
-	{7, &RX_GAIN[6] ,DEFAULT_GAIN},
-	{8, &RX_GAIN[7] ,DEFAULT_GAIN},
-	{9, &RX_GAIN[8] ,DEFAULT_GAIN},
-	{10,&RX_GAIN[9] ,DEFAULT_GAIN},
-	{11,&RX_GAIN[10],DEFAULT_GAIN},
-	{12,&RX_GAIN[11],DEFAULT_GAIN},
-	{13,&RX_GAIN[12],DEFAULT_GAIN},
-	{14,&RX_GAIN[13],DEFAULT_GAIN},
-	{15,&RX_GAIN[14],DEFAULT_GAIN},
-	{16,&RX_GAIN[15],DEFAULT_GAIN},
-	{17,&AuxIn[0]   ,0},
-	{18,&AuxIn[1]   ,0},
-	{19,&AuxIn[2]   ,0},
-	{20,&AuxOut[0]  ,1},
-	{21,&AuxOut[1]  ,1},
-	{22,&AuxOut[2]  ,1},
-	{23,&CORPriority[0] ,0},
-	{24,&CORPriority[1] ,5},
-	{25,&CORPriority[2] ,5},
-	{26,&CORPriority[3] ,3}
+	{&Polarity      ,15},
+	{&RX_GAIN[0][0] ,DEFAULT_GAIN},
+	{&RX_GAIN[0][1] ,DEFAULT_GAIN},
+	{&RX_GAIN[0][2] ,DEFAULT_GAIN},
+	{&RX_GAIN[0][3] ,DEFAULT_GAIN},
+	{&RX_GAIN[1][0] ,DEFAULT_GAIN},
+	{&RX_GAIN[1][1] ,DEFAULT_GAIN},
+	{&RX_GAIN[1][2] ,DEFAULT_GAIN},
+	{&RX_GAIN[1][3] ,DEFAULT_GAIN},
+	{&RX_GAIN[2][0] ,DEFAULT_GAIN},
+	{&RX_GAIN[2][1] ,DEFAULT_GAIN},
+	{&RX_GAIN[2][2],DEFAULT_GAIN},
+	{&RX_GAIN[2][3],DEFAULT_GAIN},
+	{&RX_GAIN[3][0],DEFAULT_GAIN},
+	{&RX_GAIN[3][1],DEFAULT_GAIN},
+	{&RX_GAIN[3][2],DEFAULT_GAIN},
+	{&RX_GAIN[3][3],DEFAULT_GAIN},
+	{&AuxIn[0]     ,0},
+	{&AuxIn[1]     ,0},
+	{&AuxIn[2]     ,0},
+	{&AuxOut[0]    ,1},
+	{&AuxOut[1]    ,1},
+	{&AuxOut[2]    ,1},
+	{&CORPriority[0] ,0},
+	{&CORPriority[1] ,5},
+	{&CORPriority[2] ,5},
+	{&CORPriority[3] ,3}
+	{&RX_PTT[0]    ,0x0E},
+	{&RX_PTT[1]    ,0x0D},
+	{&RX_PTT[2]    ,0x0B},
+	{&RX_PTT[3]    ,0x07},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

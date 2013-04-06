@@ -7,7 +7,7 @@ void rs232_int (void) { // {{{
   if ( kbhit() && (sBufferIndex < sizeof(sBuffer))) {
     c = getc();
 	sBuffer[sBufferIndex++] = c;
-	if ( c == '\r' || c == '#' ) {
+	if ( c == '\r' ) {
       sBufferFlag=1;
     }
   }
@@ -21,12 +21,12 @@ void debug_sbuffer(void) { // {{{
 #endif
 
 void help (void) { // {{{
-  int x,reg_index;
+  int x;
   int * regPtr;
   char rname[REG_NAME_SIZE];
   for(x=0;x<RegMapNum;x++) {
-    reg_index = RegMap[x].reg_name_index;
-	strcpy(rname,reg_name[reg_index]);
+//    reg_index = RegMap[x].reg_name_index;
+	strcpy(rname,reg_name[x]);
     regPtr=RegMap[x].reg_ptr;
     printf("%10s %d",rname,*regPtr);
   }
@@ -118,7 +118,6 @@ void romstrcpy(char *dest,rom char *src) { // {{{
 
 void process_sBuffer(void) { // {{{
   unsigned int x;
-  int reg_index;
   char rname[REG_NAME_SIZE];
   unsigned int* regPtr;
   tokenize_sBuffer();
@@ -127,8 +126,8 @@ void process_sBuffer(void) { // {{{
   argument=-1;
   for(x=0;x<RegMapNum;x++) {
 //    romstrcpy(&rname[0],&RegMap[x].reg_name[0]);
-    reg_index = RegMap[x].reg_name_index;
-	strcpy(rname,reg_name[reg_index]);
+//    reg_index = RegMap[x].reg_name_index;
+	strcpy(rname,reg_name[x]);
 //    romstrcpy(&rname[0],&reg_name[x]);
     if(stricmp(argument_name,rname)==0) {
 	  argument=x;
