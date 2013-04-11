@@ -31,8 +31,9 @@ unsigned int1 sBufferFlag;
 // Commands
 #define SET_REG 2
 #define GET_REG 7
-#define ADM_CMD 0
+#define ADM_CMD 9
 #define HELP    3
+
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -69,8 +70,9 @@ typedef struct {
 		int RX3 : 1;
 } sCOR;
 
+#define REG_NAME_SIZE 6
 unsigned int command,argument,value;
-char argument_name[8];
+char argument_name[REG_NAME_SIZE];
 
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
@@ -113,7 +115,6 @@ unsigned int rom cMorseChar[] = {
 	0b10100101 // z (dah dah dit dit)	35
 }; // }}}
 
-#define REG_NAME_SIZE 10
 typedef struct sRegMap_t { 
 //	int      reg_name_index;
 	int *	 reg_ptr;
@@ -121,13 +122,34 @@ typedef struct sRegMap_t {
 };
 
 unsigned int COR_IN;
+unsigned int COR_FLAG;
 unsigned int Polarity;
 unsigned int RX_GAIN[4][4];
 unsigned int AuxIn[3],AuxOut[3];
 unsigned int CORPriority[4];
 unsigned int RX_PTT[4];
 
+#define COR0 PIN_B0
+#define COR1 PIN_B1
+#define COR2 PIN_B2
+#define COR3 PIN_B3
+#define DTMF_INT PIN_B4
 
+#define PTT0 PIN_A4
+#define PTT1 PIN_A5
+#define PTT2 PIN_E0
+#define PTT3 PIN_E1
+
+#define RX0_EN PIN_A0 
+#define RX1_EN PIN_A1
+#define RX2_EN PIN_A2
+#define RX3_EN PIN_A3
+
+#define COR0_MASK 0x01
+#define COR1_MASK 0x02
+#define COR2_MASK 0x04
+#define COR3_MASK 0x08
+#byte IOCBF = 0x396 
 
 //rom char COR_IN_NAME[]="COR_IN";
 //rom char POL_NAME[]="POLARITY";
@@ -138,37 +160,37 @@ unsigned int RX_PTT[4];
 #define DEFAULT_GAIN 32
 
 const char reg_name[][REG_NAME_SIZE]={
-	{"POLARITY"},	// 0
-	{"R0_GAIN0"},	// 1
-	{"R0_GAIN1"},	// 2
-	{"R0_GAIN2"},	// 3
-	{"R0_GAIN3"},	// 4
-	{"R1_GAIN0"},	// 5
-	{"R1_GAIN1"},	// 6
-	{"R1_GAIN2"},	// 7
-	{"R1_GAIN3"},	// 8
-	{"R2_GAIN0"},	// 9
-	{"R2_GAIN1"},	// 10
-	{"R2_GAIN2"},	// 11
-	{"R2_GAIN3"},	// 12
-	{"R3_GAIN0"},	// 13
-	{"R3_GAIN1"},	// 14
-	{"R3_GAIN2"},	// 15
-	{"R3_GAIN3"},	// 16
-	{"AUX_IN0"},	// 17
-	{"AUX_IN1"},	// 18
-	{"AUX_IN2"},	// 19
-	{"AUX_OUT0"},	// 20
-	{"AUX_OUT1"},	// 21
-	{"AUX_OUT2"},	// 22
-	{"COR0_PRI"},	// 23
-	{"COR1_PRI"},	// 24
-	{"COR2_PRI"},	// 25
-	{"COR3_PRI"},	// 26
-	{"R0_PTT"},	    // 27
-	{"R1_PTT"},	    // 28
-	{"R2_PTT"},	    // 29
-	{"R3_PTT"},	    // 30
+	{"POL"},	// 0
+	{"R0G0"},	// 1
+	{"R0G1"},	// 2
+	{"R0G2"},	// 3
+	{"R0G3"},	// 4
+	{"R1G0"},	// 5
+	{"R1G1"},	// 6
+	{"R1G2"},	// 7
+	{"R1G3"},	// 8
+	{"R2G0"},	// 9
+	{"R2G1"},	// 10
+	{"R2G2"},	// 11
+	{"R2G3"},	// 12
+	{"R3G0"},	// 13
+	{"R3G1"},	// 14
+	{"R3G2"},	// 15
+	{"R3G3"},	// 16
+	{"XI0"},	// 17
+	{"XI1"},	// 18
+	{"XI2"},	// 19
+	{"XO0"},	// 20
+	{"XO1"},	// 21
+	{"XO2"},	// 22
+	{"C0P"},	// 23
+	{"C1P"},	// 24
+	{"C2P"},	// 25
+	{"C3P"},	// 26
+	{"R0PTT"},	    // 27
+	{"R1PTT"},	    // 28
+	{"R2PTT"},	    // 29
+	{"R3PTT"},	    // 30
 
 };
 
@@ -230,10 +252,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]    ,1},
 	{&AuxOut[1]    ,1},
 	{&AuxOut[2]    ,1},
-	{&CORPriority[0] ,0},
+	{&CORPriority[0] ,1},
 	{&CORPriority[1] ,5},
 	{&CORPriority[2] ,5},
-	{&CORPriority[3] ,3}
+	{&CORPriority[3] ,3},
 	{&RX_PTT[0]    ,0x0E},
 	{&RX_PTT[1]    ,0x0D},
 	{&RX_PTT[2]    ,0x0B},

@@ -4,31 +4,56 @@
 void rs232_int (void) { // {{{
 // RS232 serial buffer interrupt handler.
   char c;
-  if ( kbhit() && (sBufferIndex < sizeof(sBuffer))) {
+  if ( kbhit() ) {
     c = getc();
-	sBuffer[sBufferIndex++] = c;
-	if ( c == '\r' ) {
-      sBufferFlag=1;
+    if ( c == '\b' ) {
+      if ( sBufferIndex > 0 ) {
+        sBufferIndex--;
+        sBuffer[sBufferIndex]='\0';
+        putc('\b');
+      } else {
+        putc('\a'); // Send alert. Cannot backspace further
+      }
+    } else if (sBufferIndex < sizeof(sBuffer)) {
+      putc(c); // echo the character
+      sBuffer[sBufferIndex++] = c;
+      if ( c == '\r' ) {
+        sBufferFlag=1;
+      }
+    } else {
+      putc('\a'); // Send alert. Avoid buffer overflow
     }
   }
 } // }}}
 
+#INT_RB
+void RB0_INT (void) {
+  int COR,CorPol;
+  int COR_Pri;
+  
+  CorPol=(Polarity & COR0_MASK)!=0;
+  COR=((input_b()&0x0F) ^ CorPol);
+  if ( COR && (CORPriority[0] > CORPriority) ) {
+    COR_FLAG = 1;
+  }
+}
+
 #ifdef DEBUG_SBUFFER
 void debug_sbuffer(void) { // {{{
   sBufferFlag=1;
-  sBuffer="set R0_GAIN0 9\r";
+  sBuffer="set R0G0 9\r";
 } // }}}
 #endif
 
 void help (void) { // {{{
-  int x;
-  int * regPtr;
+  unsigned int x;
+  unsigned int * regPtr;
   char rname[REG_NAME_SIZE];
   for(x=0;x<RegMapNum;x++) {
 //    reg_index = RegMap[x].reg_name_index;
 	strcpy(rname,reg_name[x]);
     regPtr=RegMap[x].reg_ptr;
-    printf("%10s %d",rname,*regPtr);
+    printf("[%d] %s %d\n\r",x,rname,*regPtr);
   }
 } // }}}
 
@@ -42,12 +67,19 @@ void clear_sBuffer(void) { // {{{
   }
   sBufferIndex=0;
   sBufferFlag=0;  
+  argument=-1;
+  argument_name[0]='\0';
+  command=0;
 } // }}}
 
 void initialize (void) { // {{{
 // This function performs all initializations upon
 // power-up
   clear_sBuffer();
+  enable_interrupts(INT_RDA);
+  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
+  enable_interrupts(GLOBAL);
+  printf("\n\rRadio Repeater Controller - VE2LRS (C)2013\n\r");
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -99,12 +131,12 @@ void set_var (void) { // {{{
   // Otherwise it displays it.
   int *pObj;
   if ( value == -1 ) {
-		printf ("%s %d",argument,value);
+		printf ("%s %d\n\r",argument,value);
   } else {
 // DEBUG HERE!!!
-    pObj=(int *)RegMap[argument].reg_ptr;
+    pObj=RegMap[argument].reg_ptr;
     *pObj=value;
-    printf ("Setting %s to %d",argument,value);
+    printf ("\n\rSetting %s(%d) to %d\n\r",argument_name,argument,value);
   }
 } // }}}
 
@@ -133,24 +165,32 @@ void process_sBuffer(void) { // {{{
 	  argument=x;
 	}
   }
-  if ( argument==-1) {
-    printf ("Error : Invalid argument %s",argument_name);
+  if ( command==SET_REG && argument==-1) {
+    printf ("\n\rError : Invalid argument %s\n\r",argument_name);
   } else {
-    if (command==SET_REG) {
-      set_var();
-    } else if (command==GET_REG) {
-      regPtr=RegMap[argument].reg_ptr;
-      printf("%s %d",argument_name,*regPtr);
-	}
+    switch(command) {
+      case SET_REG:
+        set_var();
+        break;
+      case GET_REG:
+        regPtr=RegMap[argument].reg_ptr;
+        printf("\n\r%s %d\n\r",argument_name,*regPtr);
+        break;
+      case HELP:
+        help();
+        break;
+    }
   }
   sBufferFlag=0;
 } // }}}
 
 void main (void) { // {{{
   initialize();
-  unsigned int gain;
+
 #ifdef DEBUG_SBUFFER
     debug_sbuffer();
+  int1 toggle;
+  toggle=0;
 #endif
   while(1) { // {{{
     // Process RS232 Serial Buffer Flag {{{
@@ -159,8 +199,12 @@ void main (void) { // {{{
       process_sBuffer();
       clear_sBuffer();
     }
-	gain = RX_GAIN[1][1];
-	gain = RX_GAIN[1][2];
+	output_bit(PTT0,toggle);
+	output_bit(PTT1,toggle);
+	output_bit(RX0_EN,~toggle);
+	output_bit(RX1_EN,~toggle);
+    toggle=~toggle;
+	delay_ms(250);
     // Process RS232 Serial Buffer Flag }}}
   } // End of while(1) main loop
 } // }}}
