@@ -18,7 +18,7 @@
 
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,scl=PIN_C3,sda=PIN_C4)
-#use RS232 (BAUD=9600,UART2)
+#use RS232 (BAUD=19200,UART2)
 
 // RS232 variables / buffers {{{
 char sBuffer[16];
@@ -27,12 +27,15 @@ unsigned int1 sBufferFlag;
 // }}}
 
 #define DEBUG_SBUFFER
+#define ESC 0x1B
 
 // Commands
 #define SET_REG 2
-#define GET_REG 7
+#define GET_REG 3
+#define SAVE_SETTINGS 4
+#define RESTORE_SETTINGS 5
 #define ADM_CMD 9
-#define HELP    3
+#define HELP    8
 
 
 // DTMF character -- MT8888 maps {{{
@@ -119,7 +122,11 @@ typedef struct sRegMap_t {
 //	int      reg_name_index;
 	int *	 reg_ptr;
 	int	 default_value;
+	int	 non_volatile : 1;
 };
+
+int dtmf_read(int1 rs);
+void dtmf_write(int data,int1 rs);
 
 unsigned int COR_IN;
 unsigned int COR_FLAG;
@@ -129,11 +136,48 @@ unsigned int AuxIn[3],AuxOut[3];
 unsigned int CORPriority[4];
 unsigned int RX_PTT[4];
 
+// Source is used by init_variables
+// EEPROM -- Initializes variables using values stored in EEPROM
+// DEFAULT -- Initializes variables using values in ROM
+#define USE_EEPROM_VARS 1
+#define USE_DEFAULT_VARS 0
+#define EEPROM   1
+#define RAM      0
+
+#define DTMF_D0  PIN_D0
+#define DTMF_D1  PIN_D1
+#define DTMF_D2  PIN_D2
+#define DTMF_D3  PIN_D3
+#define DTMF_REB PIN_D4 // PH2 (12)
+#define DTMF_WEB PIN_D5 // RWb (9)
+#define DTMF_RS  PIN_D6 // RS0 (11)
+#define DTMF_CS  PIN_D7 // CSB (10)
+#define DTMF_INT PIN_B4
+#define CONTROL_REG 1
+#define DATA_REG 0
+// Register A bits
+#define TOUT     0x01
+#define IRQ		 0x04
+#define RSELB	 0x08
+// Register B bits
+#define BURST    0x00
+#define BURST_OFF 0x01
+#define DUAL_TONE 0x00
+#define SINGLE_TONE 0x04
+#define ST_ROW   0x00
+#define ST_COL   0x08
+
+#define AUX_IN0  PIN_B6
+#define AUX_IN1  PIN_B7
+#define AUX_IN2  PIN_C0
+#define AUX_OUT0 PIN_C1
+#define AUX_OUT1 PIN_C5
+#define AUX_OUT2 PIN_E2
+
 #define COR0 PIN_B0
 #define COR1 PIN_B1
 #define COR2 PIN_B2
 #define COR3 PIN_B3
-#define DTMF_INT PIN_B4
 
 #define PTT0 PIN_A4
 #define PTT1 PIN_A5
@@ -229,37 +273,37 @@ const char reg_name[][REG_NAME_SIZE]={
 //	{26,&RX_PTT[3] ,0x07},
 //};
 struct sRegMap_t const RegMap[]={
-	{&Polarity      ,15},
-	{&RX_GAIN[0][0] ,DEFAULT_GAIN},
-	{&RX_GAIN[0][1] ,DEFAULT_GAIN},
-	{&RX_GAIN[0][2] ,DEFAULT_GAIN},
-	{&RX_GAIN[0][3] ,DEFAULT_GAIN},
-	{&RX_GAIN[1][0] ,DEFAULT_GAIN},
-	{&RX_GAIN[1][1] ,DEFAULT_GAIN},
-	{&RX_GAIN[1][2] ,DEFAULT_GAIN},
-	{&RX_GAIN[1][3] ,DEFAULT_GAIN},
-	{&RX_GAIN[2][0] ,DEFAULT_GAIN},
-	{&RX_GAIN[2][1] ,DEFAULT_GAIN},
-	{&RX_GAIN[2][2],DEFAULT_GAIN},
-	{&RX_GAIN[2][3],DEFAULT_GAIN},
-	{&RX_GAIN[3][0],DEFAULT_GAIN},
-	{&RX_GAIN[3][1],DEFAULT_GAIN},
-	{&RX_GAIN[3][2],DEFAULT_GAIN},
-	{&RX_GAIN[3][3],DEFAULT_GAIN},
-	{&AuxIn[0]     ,0},
-	{&AuxIn[1]     ,0},
-	{&AuxIn[2]     ,0},
-	{&AuxOut[0]    ,1},
-	{&AuxOut[1]    ,1},
-	{&AuxOut[2]    ,1},
-	{&CORPriority[0] ,1},
-	{&CORPriority[1] ,5},
-	{&CORPriority[2] ,5},
-	{&CORPriority[3] ,3},
-	{&RX_PTT[0]    ,0x0E},
-	{&RX_PTT[1]    ,0x0D},
-	{&RX_PTT[2]    ,0x0B},
-	{&RX_PTT[3]    ,0x07},
+	{&Polarity      ,15           ,EEPROM},
+	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[0][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[0][3] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[1][0] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[1][1] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[1][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[1][3] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[2][0] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[2][1] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[2][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[2][3] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[3][0] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[3][1] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[3][3] ,DEFAULT_GAIN, EEPROM},
+	{&AuxIn[0]      ,0           , EEPROM},
+	{&AuxIn[1]      ,0           , EEPROM},
+	{&AuxIn[2]      ,0           , EEPROM},
+	{&AuxOut[0]     ,1           , EEPROM},
+	{&AuxOut[1]     ,1           , EEPROM},
+	{&AuxOut[2]     ,1           , EEPROM},
+	{&CORPriority[0],1           , EEPROM},
+	{&CORPriority[1],5           , EEPROM},
+	{&CORPriority[2],5           , EEPROM},
+	{&CORPriority[3],3           , EEPROM},
+	{&RX_PTT[0]     ,0x0E        , EEPROM},
+	{&RX_PTT[1]     ,0x0D        , EEPROM},
+	{&RX_PTT[2]     ,0x0B        , EEPROM},
+	{&RX_PTT[3]     ,0x07        , EEPROM},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);
