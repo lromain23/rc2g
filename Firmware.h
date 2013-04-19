@@ -2,7 +2,6 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "SITE_XX.h"
 
 #fuses INTRC_IO
@@ -18,7 +17,11 @@
 
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,scl=PIN_C3,sda=PIN_C4)
-#use RS232 (BAUD=19200,UART2)
+#use RS232 (BAUD=19200,UART1)
+#use fast_io (b)
+#use fast_io (d)
+
+
 
 // RS232 variables / buffers {{{
 char sBuffer[16];
@@ -34,6 +37,8 @@ unsigned int1 sBufferFlag;
 #define GET_REG 3
 #define SAVE_SETTINGS 4
 #define RESTORE_SETTINGS 5
+#define INCREMENT_REG 6
+#define DECREMENT_REG 7
 #define ADM_CMD 9
 #define HELP    8
 
@@ -66,6 +71,9 @@ typedef struct {
 			int UNUSED	: 2;
 } sDTMF;
 
+sDTMF DTMF_ARRAY[10];
+sDTMF *DTMF_ptr;
+
 typedef struct {
 		int RX0 : 1;
 		int RX1 : 1;
@@ -76,6 +84,11 @@ typedef struct {
 #define REG_NAME_SIZE 6
 unsigned int command,argument,value;
 char argument_name[REG_NAME_SIZE];
+// RegisterPointer is set by the get_var command.
+// It points to the last register that was accessed.
+// It is used by the INCR or DECR commands
+unsigned int  LastRegisterIndex;
+unsigned int  LastRegisterIndexValid;
 
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
@@ -129,11 +142,13 @@ int dtmf_read(int1 rs);
 void dtmf_write(int data,int1 rs);
 
 unsigned int COR_IN;
-unsigned int COR_FLAG;
+int1         COR_FLAG;
+int1	     DTMF_FLAG;
 unsigned int Polarity;
 unsigned int RX_GAIN[4][4];
 unsigned int AuxIn[3],AuxOut[3];
-unsigned int CORPriority[4];
+unsigned int RXPriority[4];
+unsigned int CORPriority;
 unsigned int RX_PTT[4];
 
 // Source is used by init_variables
@@ -193,6 +208,7 @@ unsigned int RX_PTT[4];
 #define COR1_MASK 0x02
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
+#define DTMF_INT_MASK 0x10
 #byte IOCBF = 0x396 
 
 //rom char COR_IN_NAME[]="COR_IN";
@@ -296,10 +312,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,1           , EEPROM},
 	{&AuxOut[1]     ,1           , EEPROM},
 	{&AuxOut[2]     ,1           , EEPROM},
-	{&CORPriority[0],1           , EEPROM},
-	{&CORPriority[1],5           , EEPROM},
-	{&CORPriority[2],5           , EEPROM},
-	{&CORPriority[3],3           , EEPROM},
+	{&RXPriority[0],1           , EEPROM},
+	{&RXPriority[1],5           , EEPROM},
+	{&RXPriority[2],5           , EEPROM},
+	{&RXPriority[3],3           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
