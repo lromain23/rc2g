@@ -7,21 +7,36 @@
 #fuses INTRC_IO
 #fuses NOPROTECT
 #fuses BROWNOUT
-#fuses NOMCLR
+#fuses MCLR
 #fuses NOCPD
 #fuses NOWDT // WDT controlled by sw
 #fuses NOPUT
 #fuses NOFCMEN
 #fuses NOIESO
+#fuses NODEBUG
 #case
 
 #use delay(internal=8M,restart_wdt)
-#use I2C (master,force_hw,scl=PIN_C3,sda=PIN_C4)
-#use RS232 (BAUD=19200,UART1)
+#use I2C (MASTER,FORCE_HW,SDA=PIN_C4,SCL=PIN_C3)
+//#use I2C (master,force_hw,I2C1)
+#use RS232 (BAUD=9600,UART1)
 #use fast_io (b)
+#use fast_io (c)
 #use fast_io (d)
 
+//function headers
+void increment(void);
+void decrement(void);
+void init_variables(int1 src);
+void help(void);
+void set_var(void);
+void tokenize_sBuffer(void);
+void store_variables(void);
 
+// COR variables {{{
+unsigned int CurrentCorMask;
+unsigned int CurrentCorPriority;
+// }}}
 
 // RS232 variables / buffers {{{
 char sBuffer[16];
@@ -42,6 +57,12 @@ unsigned int1 sBufferFlag;
 #define ADM_CMD 9
 #define HELP    8
 
+// Digital TrimPot
+//
+#define TRIMPOT_READ_CMD  0x51
+#define TRIMPOT_WRITE_CMD 0x50
+
+const int8 TRIMPOT_ADD[4]={0x00,0x40,0x80,0xC0};
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -71,7 +92,8 @@ typedef struct {
 			int UNUSED	: 2;
 } sDTMF;
 
-sDTMF DTMF_ARRAY[10];
+#define DTMF_ARRAY_SIZE 10
+sDTMF DTMF_ARRAY[DTMF_ARRAY_SIZE];
 sDTMF *DTMF_ptr;
 
 typedef struct {
@@ -218,6 +240,8 @@ unsigned int RX_PTT[4];
 //rom char * rom strPtr=COR_IN_NAME;
 
 #define DEFAULT_GAIN 32
+const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
+const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 
 const char reg_name[][REG_NAME_SIZE]={
 	{"POL"},	// 0

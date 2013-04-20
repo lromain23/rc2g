@@ -32,10 +32,31 @@ Any
 ## ASYNCH
 Pin
 RB0
-Pulse High
-100 ms
+Toggle
 
-3
+
+-1
+--
+Pin
+RB1
+Toggle
+
+
+-1
+--
+Pin
+RB2
+Toggle
+
+
+-1
+--
+Pin
+RB3
+Toggle
+
+
+-1
 --
 &
 ## ADVANCEDSCL
