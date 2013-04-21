@@ -17,9 +17,8 @@
 #case
 
 #use delay(internal=8M,restart_wdt)
-#use I2C (MASTER,FORCE_HW,SDA=PIN_C4,SCL=PIN_C3)
-//#use I2C (master,force_hw,I2C1)
-#use RS232 (BAUD=9600,UART1)
+#use I2C (master,force_hw,I2C1)
+#use RS232 (BAUD=9600,UART1,RESTART_WDT)
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
@@ -231,6 +230,7 @@ unsigned int RX_PTT[4];
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
 #define DTMF_INT_MASK 0x10
+#byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
 
 //rom char COR_IN_NAME[]="COR_IN";

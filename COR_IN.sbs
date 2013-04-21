@@ -58,6 +58,20 @@ Toggle
 
 -1
 --
+Pin
+RC3
+Toggle
+
+SCL
+-1
+--
+Pin
+RC4
+Toggle
+
+SDA
+-1
+--
 &
 ## ADVANCEDSCL
 

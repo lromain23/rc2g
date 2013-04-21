@@ -16,7 +16,7 @@ void process_sBuffer(void) { // {{{
   	}
   }
   if ( command==SET_REG && argument==-1) {
-    printf ("\n\rError : Invalid argument %s\n\r",argument_name);
+//    printf ("\n\rError : Invalid arg%s\n\r",argument_name);
   } else {
     switch(command) {
       case SET_REG:
@@ -94,6 +94,7 @@ void RB0_INT (void) { // {{{
   int value;
   int LAST_COR_IN;
 
+  putc('I');
   LAST_COR_IN=COR_IN;
   COR_IN=(input_b() ^ Polarity)&0x0F;
   if ( LAST_COR_IN != COR_IN ) {
@@ -112,8 +113,20 @@ void RB0_INT (void) { // {{{
   }
 } // }}}
 
+void set_trimpot(pot,value) {
+  int tx_value;
+  tx_value=pot << 6;
+  tx_value=tx_value + (value & 0x3F);
+  i2c_start();
+  i2c_write(TRIMPOT_WRITE_CMD);
+  i2c_write(tx_value);
+  i2c_stop();  
+  printf("Setting Pot(%u) to %u\r\n",pot,tx_value);
+}
+
 void update_ptt(int cor) { // {{{
-  int x;
+  int x,pot;
+  int pot_val;
   int mask;
   int ptt,rx_en;
   int1 rx_bit,ptt_bit;
@@ -137,6 +150,11 @@ void update_ptt(int cor) { // {{{
         rx_bit=0;
       }
       ptt_bit=(ptt&mask)!=0;
+		// Update TrimPots
+	  for(pot=0;pot<4;pot++){
+        pot_val=RX_GAIN[cor-1][pot];
+		set_trimpot(pot,pot_val);
+	  }
     }
     output_bit(RX_PIN[x],rx_bit);
     output_bit(PTT_PIN[x],ptt_bit);
@@ -212,9 +230,11 @@ void header (void) { // {{{
 } // }}}
 
 void help (void) { // {{{
-  unsigned int x,pot_val;
+  int x;
+  int nak;
+  int8 pot_val;
   unsigned int * regPtr;
-  int ack;
+  int ack1,ack2;
   int dtmf_in;
   char rname[REG_NAME_SIZE];
   clearscr();
@@ -228,15 +248,18 @@ void help (void) { // {{{
   }
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
   printf("\n\rTRIMPOTS : ");
+
   i2c_start();
-  ack=i2c_write(TRIMPOT_READ_CMD);
+  ack1=i2c_write(TRIMPOT_READ_CMD);
   for(x=0;x<4;x++) {
-    if ( i2c_poll() ) {
-      pot_val=i2c_read(1);
-    } else {
-      pot_val=0;
-    }
-    printf("  ACK=%u POT(%u) = %u",ack,x,pot_val);
+      if(x==3) {
+	    nak=0;
+	  } else {
+	    nak=1;
+	  }
+      pot_val=i2c_read(nak);
+	  pot_val=pot_val&0x3F;
+      printf("  Pot(%d)=%d",x,pot_val);
   }
   i2c_stop();
   printf("\n\n\rCOMMAND> ");
@@ -261,16 +284,6 @@ void dtmf_write(int data,int1 rs) { // {{{
   int1 dbit;
 // Write Data Bits {{{
   set_tris_d(0x00);
-  // C7 : UART RX
-  // C6 : UART TX
-  // C5 : Aux1 Out
-  // C4 : I2C SDA
-  // C3 : I2C SCL
-  // C2 : PWM Out
-  // C1 : Aux0 Out
-  // C0 : Aux2 In
-  // TRIS_C = 0x5D;
-  set_tris_c(0b10011101);
   dbit=((data&0x0F)&0x01)!=0;
   output_bit(DTMF_D0,dbit);
   dbit=((data&0x0F)&0x02)!=0;
@@ -305,6 +318,7 @@ int dtmf_read(int1 rs) { // {{{
 } // }}}
 
 void init_dtmf(void) { // {{{
+        printf("init_dtmf begin\r\n");
     output_bit(DTMF_REB,1);
   	output_bit(DTMF_WEB,1);
   	output_bit(DTMF_RS ,DATA_REG);
@@ -407,29 +421,25 @@ void init_variables (int1 source) { // {{{
     // Attempt initialization from EEPROM and verify checksum.
     // If checksum does not match, use default variables.
     if ( !_init_variables(source) ) {
-      printf("Checksum missmatch. Restoring default values.\n\r");
+      printf("Checksum mismatch. Restoring default values.\n\r");
         _init_variables(USE_DEFAULT_VARS);
 		store_variables();
     }
 } // }}}
 
 void init_trimpot(void) {//{{{
-  int ack1,ack2,ack3,ack4;
-  printf("Initialize trimpot\n\r");
-  i2c_start();
-  ack1=i2c_write(TRIMPOT_WRITE_CMD);
-  ack2=i2c_write(0x41);
-  ack3=i2c_write(0x82);
-  ack4=i2c_write(0xC3);
-  i2c_stop();
-  output_bit(PTT3,1);
-  printf("Trimpot init done. ACK=%u %u %u %u \n\r",ack1,ack2,ack3,ack4);
+  set_trimpot(0,1);
+  set_trimpot(1,2);
+  set_trimpot(2,3);
+  set_trimpot(3,5);
 } // }}}
 
 void initialize (void) { // {{{
 // This function performs all initializations upon
 // power-up
   clear_sBuffer();
+  setup_wdt(WDT_1S);
+  WPUB=0x00;
   //setup_comparator(NC_NC_NC_NC);
   LastRegisterIndexValid=0;
   LastRegisterIndex=0;
@@ -439,7 +449,7 @@ void initialize (void) { // {{{
   set_tris_d(0x00);
   set_tris_e(0xF8);
   enable_interrupts(INT_RDA);
-  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3|INT_RB4);
+//  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3|INT_RB4);
   enable_interrupts(GLOBAL);
   output_bit(DTMF_CS ,0);
   output_bit(DTMF_WEB,1);
@@ -450,7 +460,18 @@ void initialize (void) { // {{{
   init_dtmf();
   clear_dtmf_array();
   header();
-  //init_trimpot();
+  // C7 : UART RX
+  // C6 : UART TX
+  // C5 : Aux1 Out
+  // C4 : I2C SDA
+  // C3 : I2C SCL
+  // C2 : PWM Out
+  // C1 : Aux0 Out
+  // C0 : Aux2 In
+  // TRIS_C = 0x5D;
+  set_tris_c(0b10011101);
+  init_trimpot();
+  printf("Initialization complete\n\r");
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -574,6 +595,7 @@ void main (void) { // {{{
     debug_sbuffer();
 #endif
   while(1) { // {{{
+	restart_wdt();
     // Process RS232 Serial Buffer Flag {{{
     // The sBufferFlag is set when a "#" or a "\r" is received.
     if ( sBufferFlag ) {
