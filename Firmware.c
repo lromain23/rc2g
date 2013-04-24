@@ -1,65 +1,5 @@
 #include "Firmware.h"
 
-void process_sBuffer(void) { // {{{
-  unsigned int x;
-  int1 init_src;
-  char rname[REG_NAME_SIZE];
-  unsigned int* regPtr;
-  tokenize_sBuffer();
-
-  // Find matching reg_id
-  argument=-1;
-  for(x=0;x<RegMapNum;x++) {
-	  strcpy(rname,reg_name[x]);
-    if(stricmp(argument_name,rname)==0) {
-	    argument=x;
-  	}
-  }
-  if ( command==SET_REG && argument==-1) {
-//    printf ("\n\rError : Invalid arg%s\n\r",argument_name);
-  } else {
-    switch(command) {
-      case SET_REG:
-        set_var();
-        break;
-      case GET_REG:
-        regPtr=RegMap[argument].reg_ptr;
-        LastRegisterIndex = argument;
-        LastRegisterIndexValid=1;
-        break;
-      case SAVE_SETTINGS:
-        store_variables();
-        break;
-      case RESTORE_SETTINGS:
-        if ( value == USE_EEPROM_VARS ) {
-          init_src=USE_EEPROM_VARS;
-        } else {
-          init_src=USE_DEFAULT_VARS;
-        }
-        init_variables(init_src);
-        break;
-      case INCREMENT_REG:
-        increment();
-        break;
-      case DECREMENT_REG:
-        decrement();
-        break;
-      case HELP:
-        help();
-        break;
-    }
-  }
-  sBufferFlag=0;
-} // }}}
-
-void clearscr(void) {
-// Erase the screen 
-  putc(ESC);
-  printf("[2J");
-// Move cursor back to top
-  putc(ESC);
-  printf("[0;0H");
-}
 #INT_RDA
 void rs232_int (void) { // {{{
 // RS232 serial buffer interrupt handler.
@@ -91,29 +31,142 @@ void rs232_int (void) { // {{{
 
 #INT_RB
 void RB0_INT (void) { // {{{
-  int value;
+  int value,dtmf_status;
   int LAST_COR_IN;
 
-  putc('I');
-  LAST_COR_IN=COR_IN;
-  COR_IN=(input_b() ^ Polarity)&0x0F;
-  if ( LAST_COR_IN != COR_IN ) {
-    COR_FLAG = 1;
-  }
-  clear_interrupt(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
-  if ( input_b() & DTMF_INT_MASK ) {
-    DTMF_FLAG = 1;
-    value=input_d()&0x0F;
-    if ( DTMF_ptr <= &DTMF_ARRAY[DTMF_ARRAY_SIZE-1] ) {
-      *DTMF_ptr->Strobe=1;
-      *DTMF_ptr->Key=value;
-      DTMF_ptr++;
+  //if(interrupt_active(INT_RB0|INT_RB1|INT_RB2|INT_RB3)) {
+  if(IOCBF&0x0F) { // Check for interrupts on RB[3:0] only
+    LAST_COR_IN=COR_IN;
+    COR_IN=(input_b() ^ Polarity)&0x0F;
+    if ( LAST_COR_IN != COR_IN ) {
+      COR_FLAG = 1;
     }
-    clear_interrupt(INT_RB4);
+    clear_interrupt(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
+  }
+  if ( interrupt_active(INT_RB4_H2L) ) {
+    // Read DTMF data first. Then mark it as valid if the DTMF_BUFFER_FULL flag is set.
+    dtmf_status = dtmf_read(CONTROL_REG);
+    if ( dtmf_status & DTMF_BUFFER_FULL) {
+      value=dtmf_read(DATA_REG);
+      DTMF_IN_FLAG=1;
+      if ( value == dd ) {
+        value=d0;
+      } else if ( value == d0 ) {
+        value=dd;
+      }
+      // Check for '#'
+      if ( value == dp ) {
+        DTMF_FLAG = 1;
+        DTMF_ptr->Last=1;
+      } else {
+	      if ( DTMF_ptr <= &DTMF_ARRAY[DTMF_ARRAY_SIZE-1] ) {
+  	    DTMF_ptr->Strobe=1;
+          DTMF_ptr->Key=value;
+          DTMF_ptr++;
+        }
+      }
+      clear_interrupt(INT_RB4_H2L);
+    }
   }
 } // }}}
 
-void set_trimpot(pot,value) {
+#INT_TIMER0
+void int_rtcc(void) { // {{{
+  if ( rtcc_cnt ) {
+    rtcc_cnt--;
+  } else {
+    COR_FLAG=1;
+    rtcc_cnt=31;
+  }
+} // }}}
+
+void execute_command(void) { // {{{
+  unsigned int* regPtr;
+  int1 init_src;
+  switch(command) {
+    case SET_REG:
+      set_var();
+      break;
+    case GET_REG:
+      regPtr=RegMap[argument].reg_ptr;
+      LastRegisterIndex = argument;
+      LastRegisterIndexValid=1;
+      break;
+    case SAVE_SETTINGS:
+      store_variables();
+      break;
+    case RESTORE_SETTINGS:
+      if ( value == USE_EEPROM_VARS ) {
+        init_src=USE_EEPROM_VARS;
+      } else {
+        init_src=USE_DEFAULT_VARS;
+      }
+      init_variables(init_src);
+      break;
+    case INCREMENT_REG:
+      increment(1);
+      break;
+    case DECREMENT_REG:
+      increment(-1);
+      break;
+    case STATUS:
+      status();
+      break;
+    case REBOOT:
+      reset_cpu();
+      break;
+    case DTMF_SEND:
+	  if ( value == d0 ) {
+		value=dd;
+	} else if (value == dd) {
+		value = d0;
+	  }
+      dtmf_send_digit(value&0x0F);
+      break;
+  }
+} // }}}
+void process_sBuffer(void) { // {{{
+  unsigned int x;
+  char rname[REG_NAME_SIZE];
+  int arg_tmp;
+  int test_value;
+
+  tokenize_sBuffer();
+
+  argument=-1;
+  // Find matching reg_id
+  for(x=0;x<RegMapNum;x++) {
+	  strcpy(rname,reg_name[x]);
+    if(stricmp(argument_name,rname)==0) {
+	    argument=x;
+  	}
+  }
+  // Match "EEPROM" or "RAM" for restore/save functions
+  if ( argument == -1 ) {
+    // save/restore <eeprom>
+		value=(int8)strtoul(argument_name,NULL,10);
+    strcpy(rname,"eeprom");
+    if(stricmp(argument_name,rname)==0) {
+      value=USE_EEPROM_VARS;
+    }
+    // save/restore <default>
+    strcpy(rname,"default");
+    if(stricmp(argument_name,rname)==0) {
+      value=USE_DEFAULT_VARS;
+    }
+  }
+  execute_command();
+} // }}}
+void clearscr(void) { // {{{
+// Erase the screen 
+  putc(ESC);
+  printf("[2J");
+// Move cursor back to top
+  putc(ESC);
+  printf("[0;0H");
+} // }}}
+
+void set_trimpot(pot,value) { // {{{
   int tx_value;
   tx_value=pot << 6;
   tx_value=tx_value + (value & 0x3F);
@@ -121,21 +174,24 @@ void set_trimpot(pot,value) {
   i2c_write(TRIMPOT_WRITE_CMD);
   i2c_write(tx_value);
   i2c_stop();  
-  printf("Setting Pot(%u) to %u\r\n",pot,tx_value);
-}
+  printf("\n\rSetting Pot(%u) to %u",pot,value);
+} // }}}
 
 void update_ptt(int cor) { // {{{
   int x,pot;
   int pot_val;
   int mask;
-  int ptt,rx_en;
+  int ptt;
   int1 rx_bit,ptt_bit;
+
+  CurrentCorIndex=cor;
 
   if ( cor ) {
     ptt=RX_PTT[cor-1];
   } else {
     ptt=0;
   }
+
 
   mask=1;
   for(x=0;x<4;x++) {
@@ -150,12 +206,7 @@ void update_ptt(int cor) { // {{{
         rx_bit=0;
       }
       ptt_bit=(ptt&mask)!=0;
-		// Update TrimPots
-	  for(pot=0;pot<4;pot++){
-        pot_val=RX_GAIN[cor-1][pot];
-		set_trimpot(pot,pot_val);
-	  }
-    }
+	}
     output_bit(RX_PIN[x],rx_bit);
     output_bit(PTT_PIN[x],ptt_bit);
     mask=mask<<1;
@@ -164,27 +215,93 @@ void update_ptt(int cor) { // {{{
     CurrentCorPriority=0;
   } else {
     CurrentCorPriority=RXPriority[cor-1];
+	// Update TrimPots
+    for(pot=0;pot<4;pot++){
+      pot_val=RX_GAIN[cor-1][pot];
+	  set_trimpot(pot,pot_val);
+  	}
+    prompt();
   }
 }// }}}
+
+int1 ValidKey(int index) { // {{{
+  int1 strobe;
+  if(index>=0 && (index <= DTMF_ARRAY_SIZE)) {
+    if(DTMF_ARRAY[index].Strobe && (DTMF_ARRAY[index].Key != dp)) {
+		strobe=1;
+	}else {
+		strobe = 0;
+	} 
+  } else {
+    strobe=0;
+  }
+  return(strobe);
+} // }}}
+
+int1 ValidKeyRange(unsigned int a,unsigned int b) { // {{{
+  int key;
+  int x;
+  int1 valid;
+  int1 strobe;
+
+  if(b>=a && (a < DTMF_ARRAY_SIZE)) {
+    valid=1;
+    for(x=a;x<=b;x++) {
+      key=DTMF_ARRAY[x].Key;
+      strobe=DTMF_ARRAY[x].Strobe;
+      if(key==dp || !strobe) {
+        valid=0;
+      }
+    }
+  } else {
+    valid=0;
+  }
+  return(valid);
+} // }}}
+
+void process_dtmf(void) { // {{{
+  int site_id;
+  int digit;
+  // Structure:
+  // [SID1][SID0][CMD1][CMD0][ARG1][ARG0][Valx][Valy][Valz]
+  //   0     1     2     3     4     5     6     7     8
+  value = 0;
+  if ( ValidKeyRange(0,5)) {
+    site_id = DTMF_ARRAY[0].Key *10 + DTMF_ARRAY[1].Key;
+    command = DTMF_ARRAY[2].Key * 10 + DTMF_ARRAY[3].Key;
+    argument = DTMF_ARRAY[4].Key * 10 + DTMF_ARRAY[5].Key;
+    digit=6;
+    while(ValidKey(digit)) {
+     value = value * 10 + DTMF_ARRAY[digit].Key;
+     digit++;
+    }
+  }
+  if ( site_id == SiteID ) {
+    execute_command();
+    clear_dtmf_array();
+  }
+} // }}}
 
 void process_cor (void) { // {{{
   int cor_priority_tmp;
   int cor_mask,cor_index;
   int rx_priority;
+  int cor_in;
   int do_update_ptt;
   int x;
 
   cor_priority_tmp = 0;
   cor_mask=1;
   do_update_ptt=0;
-  if ( CurrentCorPriority && !(COR_IN&CurrentCorMask) ) {
+  cor_in = COR_IN | (COR_EMUL&0x0F);
+  if ( CurrentCorPriority && !(cor_in&CurrentCorMask) ) {
     CurrentCorPriority=0;
     CurrentCorMask=0;
     do_update_ptt=1;
   }
   cor_index=0;
   for(x=0;x<4;x++) {
-    if ( COR_IN & cor_mask ) {
+    if ( cor_in & cor_mask ) {
       rx_priority=RXPriority[x];
       if ( rx_priority > CurrentCorPriority ) {
         cor_priority_tmp = rx_priority;
@@ -195,9 +312,14 @@ void process_cor (void) { // {{{
     cor_mask = cor_mask << 1;
   }
   if ( do_update_ptt ) {
+    printf("\n\r# COR Ports = %u; SW Emulated COR : %u",COR_IN,COR_EMUL);
     update_ptt(cor_index);
+    prompt();
   }
-  COR_FLAG = 0;
+  // Clear the DTMF array when all CORs fall
+  if ( !cor_in ) {
+    CLEAR_DTMF_FLAG=1;
+  }
 } // }}}
 
 #ifdef DEBUG_SBUFFER
@@ -229,12 +351,11 @@ void header (void) { // {{{
   printf("[40;37m");
 } // }}}
 
-void help (void) { // {{{
+void status (void) { // {{{
   int x;
   int nak;
   int8 pot_val;
   unsigned int * regPtr;
-  int ack1,ack2;
   int dtmf_in;
   char rname[REG_NAME_SIZE];
   clearscr();
@@ -246,11 +367,12 @@ void help (void) { // {{{
     regPtr=RegMap[x].reg_ptr;
     printf("[%02u] %s %u\n\r",x,rname,*regPtr);
   }
+  printf("\n\n\rCOR : %u (Emulated : %u)",COR_IN,COR_EMUL);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
   printf("\n\rTRIMPOTS : ");
 
   i2c_start();
-  ack1=i2c_write(TRIMPOT_READ_CMD);
+  i2c_write(TRIMPOT_READ_CMD);
   for(x=0;x<4;x++) {
       if(x==3) {
 	    nak=0;
@@ -259,9 +381,13 @@ void help (void) { // {{{
 	  }
       pot_val=i2c_read(nak);
 	  pot_val=pot_val&0x3F;
-      printf("  Pot(%d)=%d",x,pot_val);
+      printf(" Pot(%d)=%d",x,pot_val);
   }
   i2c_stop();
+  prompt();
+} // }}}
+
+void prompt(void) { // {{{
   printf("\n\n\rCOMMAND> ");
 } // }}}
 
@@ -303,22 +429,22 @@ void dtmf_write(int data,int1 rs) { // {{{
   set_tris_d(0x0F);
 } // }}}
 
-int dtmf_read(int1 rs) { // {{{
+int dtmf_read(int rs) { // {{{
   int value;
   set_tris_d(0x0F);
   output_bit(DTMF_RS,rs);
-  delay_cycles(2);
+  delay_cycles(1);
   output_bit(DTMF_REB,0);
   delay_cycles(1);
-  value=input_d()&0x0F;
+  value=input_d();
+  value&=0x0F;
   output_bit(DTMF_REB,1);
   //output_bit(DTMF_RS,DATA_REG);  
-  delay_cycles(2);
+  delay_cycles(1);
   return(value);
 } // }}}
 
 void init_dtmf(void) { // {{{
-        printf("init_dtmf begin\r\n");
     output_bit(DTMF_REB,1);
   	output_bit(DTMF_WEB,1);
   	output_bit(DTMF_RS ,DATA_REG);
@@ -337,13 +463,10 @@ void dtmf_send_digit(int digit) { // {{{
   dtmf_write(digit,DATA_REG);
   //dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
   dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
-  output_bit(PTT3,1);
   for(x=0;x<5;x++) {
     delay_ms(100);
   }
   dtmf_write(IRQ,CONTROL_REG); // Disable tones
-  output_bit(PTT3,0);
-	
 } // }}}
 
 void update_checksum (int *cksum,int value) { // {{{
@@ -370,9 +493,9 @@ int _init_variables (int1 source) { // {{{
   eeprom_index=0;
   retVal = 1;
   if ( source == USE_EEPROM_VARS ) {
-    printf("Initializing RAM variables from EEPROM\n\r");
+    printf("\n\rInitializing RAM variables from EEPROM");
   } else {
-    printf("Initializing RAM variables with Default values\n\r");
+    printf("\n\rInitializing RAM variables with firmware default values");
   }
   for(x=0;x<RegMapNum;x++) {
     regPtr=RegMap[x].reg_ptr;
@@ -414,42 +537,46 @@ void store_variables(void) { // {{{
     }
   }
   write_eeprom(eeprom_index,cksum);
-  printf("Saving RAM configuration in EEPROM.\n\r");
+  printf("\n\rSaving RAM configuration in EEPROM.");
 } // }}}
 
 void init_variables (int1 source) { // {{{
     // Attempt initialization from EEPROM and verify checksum.
     // If checksum does not match, use default variables.
     if ( !_init_variables(source) ) {
-      printf("Checksum mismatch. Restoring default values.\n\r");
+      printf("\n\r  Checksum mismatch. Restoring default values.");
         _init_variables(USE_DEFAULT_VARS);
 		store_variables();
     }
 } // }}}
 
 void init_trimpot(void) {//{{{
-  set_trimpot(0,1);
-  set_trimpot(1,2);
-  set_trimpot(2,3);
-  set_trimpot(3,5);
+  set_trimpot(0,0);
+  set_trimpot(1,0);
+  set_trimpot(2,0);
+  set_trimpot(3,0);
 } // }}}
 
 void initialize (void) { // {{{
 // This function performs all initializations upon
 // power-up
   clear_sBuffer();
+  setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_1S);
   WPUB=0x00;
-  //setup_comparator(NC_NC_NC_NC);
+  COR_IN=0;
   LastRegisterIndexValid=0;
   LastRegisterIndex=0;
   CurrentCorMask=0;
   CurrentCorPriority=0;
+  CurrentCorIndex=0;
+  CurrentTrimPot=0;
   set_tris_b(0xFF);
   set_tris_d(0x00);
   set_tris_e(0xF8);
   enable_interrupts(INT_RDA);
-//  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3|INT_RB4);
+  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
+  enable_interrupts(INT_RB4_H2L);
   enable_interrupts(GLOBAL);
   output_bit(DTMF_CS ,0);
   output_bit(DTMF_WEB,1);
@@ -471,7 +598,13 @@ void initialize (void) { // {{{
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
   init_trimpot();
-  printf("Initialization complete\n\r");
+  // Initialize RTC
+  rtcc_cnt=60;
+  setup_timer_0(T0_INTERNAL|T0_DIV_256);
+  enable_interrupts(INT_TIMER0);
+  update_ptt(0);
+  printf("\n\rInitialization complete");
+  prompt();
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -521,10 +654,20 @@ void tokenize_sBuffer() { // {{{
   if ( stricmp(smatch_reg,verb) == 0 ) {
       command=RESTORE_SETTINGS;
   } // }}}
-  // Check for "HELP" command {{{
-  strcpy(smatch_reg,"help");  
+  // Check for "STATUS" command {{{
+  strcpy(smatch_reg,"status");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
-    command=HELP;
+    command=STATUS;
+  } // }}}
+  // Check for "reboot" command {{{
+  strcpy(smatch_reg,"reboot");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=REBOOT;
+  } // }}}
+  // Check for "dsend" command {{{
+  strcpy(smatch_reg,"dsend");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=DTMF_SEND;
   } // }}}
   // Check for "+ (INCR)" command {{{
   strcpy(smatch_reg,"+");  
@@ -543,42 +686,28 @@ void set_var (void) { // {{{
   // Otherwise it displays it.
   int *pObj;
   if ( value == -1 ) {
-		printf ("%s %u\n\r",argument,value);
+		printf ("\n\r%s %u",argument,value);
   } else {
     pObj=RegMap[argument].reg_ptr;
     *pObj=value;
     LastRegisterIndex = argument;
     LastRegisterIndexValid=1;
-    printf ("\n\rSetting %s(%u) to %u\n\r",argument_name,argument,value);
-    dtmf_send_digit(value);
+    printf ("\n\rSetting %s(%u) to %u",argument_name,argument,value);
+    //dtmf_send_digit(value);
   }
 } // }}}
 
-void increment(void) { // {{{
-  int *pObj;
+void increment(int incr) { // {{{
+  int *pot_ptr;
   int value;
-  char argname[REG_NAME_SIZE];
-  if ( LastRegisterIndexValid > 0 ) {
-    pObj=RegMap[LastRegisterIndex].reg_ptr;
-    value=(*pObj+1);
-    *pObj=value;
-    strcpy(argname,reg_name[LastRegisterIndex]);
-    printf ("\n\rIncrementing %s(%u) = %u\n\r",argname,LastRegisterIndex,*pObj);
+  if ( CurrentCorIndex ) {
+    pot_ptr=&RX_GAIN[CurrentCorIndex-1][CurrentTrimPot];
+    value = *pot_ptr;
+    *pot_ptr = value + incr;
+    set_trimpot(CurrentTrimPot,*pot_ptr);
+    printf ("\n\rRX_GAIN [Radio%u] [Pot%u] = %u\n\r",CurrentCorIndex,CurrentTrimPot,*pot_ptr);
   }
 } // }}}
-void decrement(void) { // {{{
-  int *pObj;
-  int value;
-  char argname[REG_NAME_SIZE];
-  if ( LastRegisterIndexValid > 0 ) {
-    pObj=RegMap[LastRegisterIndex].reg_ptr;
-    value=*pObj-1;
-    *pObj=value;
-    strcpy(argname,reg_name[LastRegisterIndex]);
-    printf ("\n\rDecrementing %s(%u) = %u\n\r",argname,LastRegisterIndex,*pObj);
-  }
-} // }}}
-
 void romstrcpy(char *dest,rom char *src) { // {{{
   int c=0;
   while(c<REG_NAME_SIZE) {
@@ -587,12 +716,13 @@ void romstrcpy(char *dest,rom char *src) { // {{{
   }
 } // }}}
 
-
 void main (void) { // {{{
+  int x,dtmf;
   initialize();
 
 #ifdef DEBUG_SBUFFER
-    debug_sbuffer();
+    //debug_sbuffer();
+    //COR_EMUL=1;
 #endif
   while(1) { // {{{
 	restart_wdt();
@@ -601,10 +731,32 @@ void main (void) { // {{{
     if ( sBufferFlag ) {
       process_sBuffer();
       clear_sBuffer();
+      sBufferFlag=0;
     }
-    // Process RS232 Serial Buffer Flag }}}
-	if ( COR_FLAG ) {
+    // Process RS232 Serial Buffer Flag }}} 
+  	if ( COR_FLAG ) {
       process_cor();
-	}
+      COR_FLAG=0;
+   	}
+    if ( DTMF_IN_FLAG ) {
+      printf("\n\rDTMF=");
+      for(x=0;x<DTMF_ARRAY_SIZE;x++) {
+        if(DTMF_ARRAY[x].Strobe) {
+          dtmf=(int)DTMF_ARRAY[x].Key;
+          printf(" %u",dtmf);
+        }
+      }
+      printf("\n\r");
+      prompt();
+      DTMF_IN_FLAG=0;
+    }
+    if ( DTMF_FLAG ) {
+      process_dtmf();
+      DTMF_FLAG=0;
+    }
+    if ( CLEAR_DTMF_FLAG ) {
+      clear_dtmf_array();
+      CLEAR_DTMF_FLAG=0;
+    }
   } // End of while(1) main loop
 } // }}}

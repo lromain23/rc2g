@@ -22,18 +22,22 @@
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
+#use fast_io (e)
 
 //function headers
-void increment(void);
-void decrement(void);
+void prompt(void);
+void increment(int);
 void init_variables(int1 src);
-void help(void);
+void status(void);
 void set_var(void);
 void tokenize_sBuffer(void);
 void store_variables(void);
+void clear_dtmf_array(void);
+void dtmf_send_digit(int);
 
 // COR variables {{{
 unsigned int CurrentCorMask;
+unsigned int CurrentCorIndex;
 unsigned int CurrentCorPriority;
 // }}}
 
@@ -43,7 +47,7 @@ unsigned int sBufferIndex;
 unsigned int1 sBufferFlag;
 // }}}
 
-#define DEBUG_SBUFFER
+//#define DEBUG_SBUFFER
 #define ESC 0x1B
 
 // Commands
@@ -53,15 +57,16 @@ unsigned int1 sBufferFlag;
 #define RESTORE_SETTINGS 5
 #define INCREMENT_REG 6
 #define DECREMENT_REG 7
-#define ADM_CMD 9
-#define HELP    8
+#define STATUS    8
+#define REBOOT    9
+#define DTMF_SEND 10
 
 // Digital TrimPot
 //
 #define TRIMPOT_READ_CMD  0x51
 #define TRIMPOT_WRITE_CMD 0x50
-
-const int8 TRIMPOT_ADD[4]={0x00,0x40,0x80,0xC0};
+unsigned int CurrentTrimPot;
+unsigned long rtcc_cnt;
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -165,11 +170,12 @@ void dtmf_write(int data,int1 rs);
 unsigned int COR_IN;
 int1         COR_FLAG;
 int1	     DTMF_FLAG;
+int1	     DTMF_IN_FLAG;
+int1	     CLEAR_DTMF_FLAG;
 unsigned int Polarity;
 unsigned int RX_GAIN[4][4];
 unsigned int AuxIn[3],AuxOut[3];
 unsigned int RXPriority[4];
-unsigned int CORPriority;
 unsigned int RX_PTT[4];
 
 // Source is used by init_variables
@@ -191,6 +197,9 @@ unsigned int RX_PTT[4];
 #define DTMF_INT PIN_B4
 #define CONTROL_REG 1
 #define DATA_REG 0
+#define DTMF_IRQ         0x01
+#define DTMF_TX_BUF_EMPTY 0x02
+#define DTMF_BUFFER_FULL 0x04
 // Register A bits
 #define TOUT     0x01
 #define IRQ		 0x04
@@ -243,39 +252,44 @@ unsigned int RX_PTT[4];
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 
+int COR_EMUL;
+unsigned int SiteID;
+
 const char reg_name[][REG_NAME_SIZE]={
 	{"POL"},	// 0
-	{"R0G0"},	// 1
-	{"R0G1"},	// 2
-	{"R0G2"},	// 3
-	{"R0G3"},	// 4
-	{"R1G0"},	// 5
-	{"R1G1"},	// 6
-	{"R1G2"},	// 7
-	{"R1G3"},	// 8
-	{"R2G0"},	// 9
-	{"R2G1"},	// 10
-	{"R2G2"},	// 11
-	{"R2G3"},	// 12
-	{"R3G0"},	// 13
-	{"R3G1"},	// 14
-	{"R3G2"},	// 15
-	{"R3G3"},	// 16
-	{"XI0"},	// 17
-	{"XI1"},	// 18
-	{"XI2"},	// 19
-	{"XO0"},	// 20
-	{"XO1"},	// 21
-	{"XO2"},	// 22
-	{"C0P"},	// 23
-	{"C1P"},	// 24
-	{"C2P"},	// 25
-	{"C3P"},	// 26
-	{"R0PTT"},	    // 27
-	{"R1PTT"},	    // 28
-	{"R2PTT"},	    // 29
-	{"R3PTT"},	    // 30
-
+	{"R1G1"},	// 1
+	{"R1G2"},	// 2
+	{"R1G3"},	// 3
+	{"R1G4"},	// 4
+	{"R2G1"},	// 5
+	{"R2G2"},	// 6
+	{"R2G3"},	// 7
+	{"R2G4"},	// 8
+	{"R3G1"},	// 9
+	{"R3G2"},	// 10
+	{"R3G3"},	// 11
+	{"R3G4"},	// 12
+	{"R4G1"},	// 13
+	{"R4G2"},	// 14
+	{"R4G3"},	// 15
+	{"R4G4"},	// 16
+	{"XI1"},	// 17
+	{"XI2"},	// 18
+	{"XI3"},	// 19
+	{"XO1"},	// 20
+	{"XO2"},	// 21
+	{"XO3"},	// 22
+	{"R1P"},	// 23
+	{"R2P"},	// 24
+	{"R3P"},	// 25
+	{"R4P"},	// 26
+	{"R1PTT"},	    // 27
+	{"R2PTT"},	    // 28
+	{"R3PTT"},	    // 29
+	{"R4PTT"},	    // 30
+    {"SID"}, // 31
+    {"COR"}, // 32
+    {"CPOT"}, // 33
 };
 
 
@@ -344,6 +358,9 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
+	{&SiteID        ,50          , EEPROM},
+	{&COR_EMUL      ,0x00        , RAM},
+	{&CurrentTrimPot,0x00        , RAM},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

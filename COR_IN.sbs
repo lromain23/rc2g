@@ -5,21 +5,88 @@
 ## DEVICE:  PIC16LF1937
 
 ## PINREGACTIONS
-cyc
+ms
 No Repeat
+SSPCON2.SEN
 --
 &
 ## ADVPINREGACTIONS
+SSPCON2.SEN
+PIR1.SSPIF
+SSPCON2.PEN
+--
+1
+COND6
+Cont
+1
+ms
+0
+
+
+--
+1
+COND7
+Cont
+1
+ms
+
+
+0
+--
+1
+COND9
+Cont
+1
+ms
+
+1
+
+--
+1
+COND10
+Cont
+10
+cyc
+
+1
+
 --
 &
 --
-COND1
-Any
+COND6
+Bit
+SSPCON2.SEN
+=
+1
+1
+cyc
 
+--
+COND7
+Bit
+SSPCON2.PEN
+=
+1
+1
+cyc
 
+--
+COND9
+Bit
+SSPCON1.SSPEN
+=
+1
+10
+cyc
 
-
-
+--
+COND10
+Bit
+PIR1.SSPIF
+=
+0
+10
+cyc
 
 --
 &
@@ -72,8 +139,15 @@ Toggle
 SDA
 -1
 --
+Pin
+RB4
+Toggle
+
+DTMF_INT
+-1
+--
 &
 ## ADVANCEDSCL
 
-0
+1
 &
