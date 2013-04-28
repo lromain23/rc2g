@@ -60,8 +60,8 @@ void RB0_INT (void) { // {{{
         DTMF_ptr->Last=1;
       } else {
 	      if ( DTMF_ptr <= &DTMF_ARRAY[DTMF_ARRAY_SIZE-1] ) {
-  	    DTMF_ptr->Strobe=1;
           DTMF_ptr->Key=value;
+  	      DTMF_ptr->Strobe=1;
           DTMF_ptr++;
         }
       }
@@ -76,6 +76,7 @@ void int_rtcc(void) { // {{{
     rtcc_cnt--;
   } else {
     COR_FLAG=1;
+    SECOND_FLAG=1;
     rtcc_cnt=31;
   }
 } // }}}
@@ -105,9 +106,11 @@ void execute_command(void) { // {{{
       break;
     case INCREMENT_REG:
       increment(1);
+      prompt();
       break;
     case DECREMENT_REG:
       increment(-1);
+      prompt();
       break;
     case STATUS:
       status();
@@ -116,11 +119,11 @@ void execute_command(void) { // {{{
       reset_cpu();
       break;
     case DTMF_SEND:
-	  if ( value == d0 ) {
-		value=dd;
-	} else if (value == dd) {
-		value = d0;
-	  }
+	    if ( value == d0 ) {
+    		value=dd;
+    	} else if (value == dd) {
+    		value = d0;
+  	  }
       dtmf_send_digit(value&0x0F);
       break;
   }
@@ -224,8 +227,8 @@ void update_ptt(int cor) { // {{{
   }
 }// }}}
 
-int1 ValidKey(int index) { // {{{
-  int1 strobe;
+int ValidKey(int index) { // {{{
+  int strobe;
   if(index>=0 && (index <= DTMF_ARRAY_SIZE)) {
     if(DTMF_ARRAY[index].Strobe && (DTMF_ARRAY[index].Key != dp)) {
 		strobe=1;
@@ -238,18 +241,19 @@ int1 ValidKey(int index) { // {{{
   return(strobe);
 } // }}}
 
-int1 ValidKeyRange(unsigned int a,unsigned int b) { // {{{
+int ValidKeyRange(unsigned int a,unsigned int b) { // {{{
   int key;
   int x;
   int1 valid;
-  int1 strobe;
 
   if(b>=a && (a < DTMF_ARRAY_SIZE)) {
     valid=1;
     for(x=a;x<=b;x++) {
-      key=DTMF_ARRAY[x].Key;
-      strobe=DTMF_ARRAY[x].Strobe;
-      if(key==dp || !strobe) {
+      key=(int)DTMF_ARRAY[x].Key;
+      if(! DTMF_ARRAY[x].Strobe ) {
+        valid=0;
+      }
+     if(key==dp) {
         valid=0;
       }
     }
@@ -266,6 +270,7 @@ void process_dtmf(void) { // {{{
   // [SID1][SID0][CMD1][CMD0][ARG1][ARG0][Valx][Valy][Valz]
   //   0     1     2     3     4     5     6     7     8
   value = 0;
+  command=0;
   if ( ValidKeyRange(0,5)) {
     site_id = DTMF_ARRAY[0].Key *10 + DTMF_ARRAY[1].Key;
     command = DTMF_ARRAY[2].Key * 10 + DTMF_ARRAY[3].Key;
@@ -275,11 +280,25 @@ void process_dtmf(void) { // {{{
      value = value * 10 + DTMF_ARRAY[digit].Key;
      digit++;
     }
+    // Commands that don't need arguments but need a value:
+    switch(command) {
+      case(DTMF_SEND):
+      case(SAVE_SETTINGS):
+      case(RESTORE_SETTINGS): 
+         value = argument;
+         break;
+    }
+    printf("\n\rProcessing DTMF sequence:");
+    printf("\n\r  SiteID  : %u",site_id);
+    printf("\n\r  Command : %u",command);
+    printf("\n\r  Argument: %u",argument);
+    printf("\n\r  Value   : %u",value);
+
+    if ( site_id == SiteID ) {
+      execute_command();
+    }
   }
-  if ( site_id == SiteID ) {
-    execute_command();
-    clear_dtmf_array();
-  }
+  CLEAR_DTMF_FLAG=1;
 } // }}}
 
 void process_cor (void) { // {{{
@@ -488,6 +507,7 @@ int _init_variables (int1 source) { // {{{
   int eeprom_index;
   int default_value;
   int retVal;
+  int eeprom_val;
 
   cksum=1;
   eeprom_index=0;
@@ -500,7 +520,8 @@ int _init_variables (int1 source) { // {{{
   for(x=0;x<RegMapNum;x++) {
     regPtr=RegMap[x].reg_ptr;
     if ( source == USE_EEPROM_VARS && RegMap[x].non_volatile ) {
-	  *regPtr=read_eeprom(eeprom_index);
+	  eeprom_val=read_eeprom(eeprom_index);
+	  *regPtr=eeprom_val;
 	  update_checksum(&cksum,*regPtr);    
       eeprom_index++;
     } else {
@@ -531,7 +552,9 @@ void store_variables(void) { // {{{
     regPtr=RegMap[x].reg_ptr;
     if ( RegMap[x].non_volatile ) {
      value=*regPtr;
-     write_eeprom(eeprom_index,value);
+     if ( read_eeprom(eeprom_index) != value ) {
+       write_eeprom(eeprom_index,value);
+     }
      update_checksum(&cksum,value);
      eeprom_index++;
     }
@@ -562,7 +585,7 @@ void initialize (void) { // {{{
 // power-up
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
-  setup_wdt(WDT_1S);
+  setup_wdt(WDT_2S);
   WPUB=0x00;
   COR_IN=0;
   LastRegisterIndexValid=0;
@@ -585,7 +608,7 @@ void initialize (void) { // {{{
   clearscr();
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
-  clear_dtmf_array();
+  CLEAR_DTMF_FLAG=1;
   header();
   // C7 : UART RX
   // C6 : UART TX
@@ -664,8 +687,8 @@ void tokenize_sBuffer() { // {{{
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=REBOOT;
   } // }}}
-  // Check for "dsend" command {{{
-  strcpy(smatch_reg,"dsend");  
+  // Check for "dtmf" command {{{
+  strcpy(smatch_reg,"dtmf");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DTMF_SEND;
   } // }}}
@@ -693,7 +716,10 @@ void set_var (void) { // {{{
     LastRegisterIndex = argument;
     LastRegisterIndexValid=1;
     printf ("\n\rSetting %s(%u) to %u",argument_name,argument,value);
-    //dtmf_send_digit(value);
+    if ( pObj >= &RX_GAIN[0][0] && pObj <= &RX_GAIN[3][3] ) {
+      increment(0); // Increment is done in this function. Only update trim pot.
+    }
+    prompt();
   }
 } // }}}
 
@@ -705,7 +731,7 @@ void increment(int incr) { // {{{
     value = *pot_ptr;
     *pot_ptr = value + incr;
     set_trimpot(CurrentTrimPot,*pot_ptr);
-    printf ("\n\rRX_GAIN [Radio%u] [Pot%u] = %u\n\r",CurrentCorIndex,CurrentTrimPot,*pot_ptr);
+//    printf ("\n\rRX_GAIN [Radio%u] [Pot%u] = %u\n\r",CurrentCorIndex,CurrentTrimPot,*pot_ptr);
   }
 } // }}}
 void romstrcpy(char *dest,rom char *src) { // {{{
@@ -713,6 +739,17 @@ void romstrcpy(char *dest,rom char *src) { // {{{
   while(c<REG_NAME_SIZE) {
     dest[c]=src[c];
 	c++;
+  }
+} // }}}
+
+void update_aux_out(void) { // {{{
+  int x,mask;
+  int1 out_bit;
+  mask=1;
+  for(x=0;x<3;x++) {
+    out_bit = (AuxOut[x]&mask)==0;
+    output_bit(AUX_OUT_PIN[x],out_bit);
+    mask<<1;
   }
 } // }}}
 
@@ -734,6 +771,9 @@ void main (void) { // {{{
       sBufferFlag=0;
     }
     // Process RS232 Serial Buffer Flag }}} 
+    if ( SECOND_FLAG ) {
+      update_aux_out();
+    }
   	if ( COR_FLAG ) {
       process_cor();
       COR_FLAG=0;

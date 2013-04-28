@@ -9,7 +9,7 @@
 #fuses BROWNOUT
 #fuses MCLR
 #fuses NOCPD
-#fuses NOWDT // WDT controlled by sw
+#fuses WDT // WDT controlled by sw
 #fuses NOPUT
 #fuses NOFCMEN
 #fuses NOIESO
@@ -34,6 +34,18 @@ void tokenize_sBuffer(void);
 void store_variables(void);
 void clear_dtmf_array(void);
 void dtmf_send_digit(int);
+
+// Variables accessed using linear addressing {{{
+unsigned int RX_GAIN[4][4];
+unsigned int AuxIn[3];
+unsigned int AuxOut[3];
+unsigned int RXPriority[4];
+unsigned int RX_PTT[4];
+unsigned int COR_IN;
+unsigned int Polarity;
+unsigned int SiteID;
+unsigned int COR_EMUL;
+// Variables accessed using linear addressing }}}
 
 // COR variables {{{
 unsigned int CurrentCorMask;
@@ -167,16 +179,11 @@ typedef struct sRegMap_t {
 int dtmf_read(int1 rs);
 void dtmf_write(int data,int1 rs);
 
-unsigned int COR_IN;
-int1         COR_FLAG;
+int1       COR_FLAG;
+int1       SECOND_FLAG;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
-unsigned int Polarity;
-unsigned int RX_GAIN[4][4];
-unsigned int AuxIn[3],AuxOut[3];
-unsigned int RXPriority[4];
-unsigned int RX_PTT[4];
 
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
@@ -219,6 +226,7 @@ unsigned int RX_PTT[4];
 #define AUX_OUT1 PIN_C5
 #define AUX_OUT2 PIN_E2
 
+
 #define COR0 PIN_B0
 #define COR1 PIN_B1
 #define COR2 PIN_B2
@@ -251,9 +259,8 @@ unsigned int RX_PTT[4];
 #define DEFAULT_GAIN 32
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
+const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 
-int COR_EMUL;
-unsigned int SiteID;
 
 const char reg_name[][REG_NAME_SIZE]={
 	{"POL"},	// 0
@@ -344,12 +351,12 @@ struct sRegMap_t const RegMap[]={
 	{&RX_GAIN[3][1] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][3] ,DEFAULT_GAIN, EEPROM},
-	{&AuxIn[0]      ,0           , EEPROM},
-	{&AuxIn[1]      ,0           , EEPROM},
-	{&AuxIn[2]      ,0           , EEPROM},
-	{&AuxOut[0]     ,1           , EEPROM},
-	{&AuxOut[1]     ,1           , EEPROM},
-	{&AuxOut[2]     ,1           , EEPROM},
+	{&AuxIn[0]      ,1           , EEPROM},
+	{&AuxIn[1]      ,2           , EEPROM},
+	{&AuxIn[2]      ,3           , EEPROM},
+	{&AuxOut[0]     ,4           , EEPROM},
+	{&AuxOut[1]     ,5           , EEPROM},
+	{&AuxOut[2]     ,6           , EEPROM},
 	{&RXPriority[0],1           , EEPROM},
 	{&RXPriority[1],5           , EEPROM},
 	{&RXPriority[2],5           , EEPROM},
