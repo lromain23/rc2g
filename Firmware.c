@@ -79,6 +79,9 @@ void int_rtcc(void) { // {{{
     SECOND_FLAG=1;
     rtcc_cnt=31;
   }
+  if (aux_timer ) {
+    aux_timer--;
+  }
 } // }}}
 
 void execute_command(void) { // {{{
@@ -106,11 +109,11 @@ void execute_command(void) { // {{{
       break;
     case INCREMENT_REG:
       increment(1);
-      prompt();
+      PROMPT_FLAG=1;
       break;
     case DECREMENT_REG:
       increment(-1);
-      prompt();
+      PROMPT_FLAG=1;
       break;
     case STATUS:
       status();
@@ -126,13 +129,14 @@ void execute_command(void) { // {{{
   	  }
       dtmf_send_digit(value&0x0F);
       break;
+    case MORSE_SEND:
+      morse(value);
+      break;
   }
 } // }}}
 void process_sBuffer(void) { // {{{
   unsigned int x;
   char rname[REG_NAME_SIZE];
-  int arg_tmp;
-  int test_value;
 
   tokenize_sBuffer();
 
@@ -180,6 +184,45 @@ void set_trimpot(pot,value) { // {{{
   printf("\n\rSetting Pot(%u) to %u",pot,value);
 } // }}}
 
+void morse (int c) { // {{{
+	int mc;
+	int x;
+
+	mc = cMorseChar[c]; 
+	
+  printf("\n\rSending morse : %u",c);
+  PROMPT_FLAG=1;
+	for(x=0;x<4;x++) {
+		switch(mc & 0xc0) { // Check two MSB's
+			case(0x40):
+				dit();
+				break;
+			case(0x80):
+				dah();
+				break;
+			default:
+				break;
+		}
+		mc = mc << 2; // Shift two MSB's out and continue with next ones
+    aux_timer=MorseLen[(MorseDitLength&0x03)];
+    while(aux_timer) {
+      delay_cycles(1);
+    }
+	}
+	if ( c < 10 ) { // Digits --> add the 5th dit or dah.
+		if ( c < 5 ) {
+			dah();
+		}
+		else {
+			dit();
+		}
+	}
+  aux_timer=3*MorseLen[(MorseDitLength&0x03)];
+  while(aux_timer) {
+    delay_cycles(1);
+  }
+} // }}}
+
 void update_ptt(int cor) { // {{{
   int x,pot;
   int pot_val;
@@ -223,7 +266,7 @@ void update_ptt(int cor) { // {{{
       pot_val=RX_GAIN[cor-1][pot];
 	  set_trimpot(pot,pot_val);
   	}
-    prompt();
+    PROMPT_FLAG=1;
   }
 }// }}}
 
@@ -333,7 +376,7 @@ void process_cor (void) { // {{{
   if ( do_update_ptt ) {
     printf("\n\r# COR Ports = %u; SW Emulated COR : %u",COR_IN,COR_EMUL);
     update_ptt(cor_index);
-    prompt();
+    PROMPT_FLAG=1;
   }
   // Clear the DTMF array when all CORs fall
   if ( !cor_in ) {
@@ -403,7 +446,7 @@ void status (void) { // {{{
       printf(" Pot(%d)=%d",x,pot_val);
   }
   i2c_stop();
-  prompt();
+  PROMPT_FLAG=1;
 } // }}}
 
 void prompt(void) { // {{{
@@ -477,13 +520,36 @@ void init_dtmf(void) { // {{{
 } // }}}
 
 void dtmf_send_digit(int digit) { // {{{
-  int x;
-  //init_dtmf();
   dtmf_write(digit,DATA_REG);
-  //dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
+  dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
+  dtmf_write(BURST_OFF|DUAL_TONE,CONTROL_REG); // Enable DTMF
   dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
-  for(x=0;x<5;x++) {
-    delay_ms(100);
+  aux_timer=AUX_TIMER_500ms;
+  while(aux_timer) {
+    delay_cycles(1);
+  }
+  dtmf_write(IRQ,CONTROL_REG); // Disable tones
+} // }}}
+
+void dit (void) { // {{{
+  dtmf_write(1,DATA_REG);
+  dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
+  dtmf_write(BURST_OFF|SINGLE_TONE,CONTROL_REG); // Enable DTMF
+  dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
+  aux_timer=MorseLen[(MorseDitLength&0x03)];
+  while(aux_timer) {
+    delay_cycles(1);
+  }
+  dtmf_write(IRQ,CONTROL_REG); // Disable tones
+} // }}}
+void dah (void) { // {{{
+  dtmf_write(1,DATA_REG);
+  dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
+  dtmf_write(BURST_OFF|SINGLE_TONE,CONTROL_REG); // Enable DTMF
+  dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
+  aux_timer=3*MorseLen[(MorseDitLength&0x03)];
+  while(aux_timer) {
+    delay_cycles(1);
   }
   dtmf_write(IRQ,CONTROL_REG); // Disable tones
 } // }}}
@@ -627,7 +693,11 @@ void initialize (void) { // {{{
   enable_interrupts(INT_TIMER0);
   update_ptt(0);
   printf("\n\rInitialization complete");
-  prompt();
+  MinuteCounter=30;
+  SecondCounter=60;
+  THIRTY_MIN_FLAG=0;
+  MINUTE_FLAG=0;
+  PROMPT_FLAG=1;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -692,6 +762,11 @@ void tokenize_sBuffer() { // {{{
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DTMF_SEND;
   } // }}}
+  // Check for "morse" command {{{
+  strcpy(smatch_reg,"morse");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=MORSE_SEND;
+  } // }}}
   // Check for "+ (INCR)" command {{{
   strcpy(smatch_reg,"+");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
@@ -719,7 +794,7 @@ void set_var (void) { // {{{
     if ( pObj >= &RX_GAIN[0][0] && pObj <= &RX_GAIN[3][3] ) {
       increment(0); // Increment is done in this function. Only update trim pot.
     }
-    prompt();
+    PROMPT_FLAG=1;
   }
 } // }}}
 
@@ -749,7 +824,21 @@ void update_aux_out(void) { // {{{
   for(x=0;x<3;x++) {
     out_bit = (AuxOut[x]&mask)==0;
     output_bit(AUX_OUT_PIN[x],out_bit);
-    mask<<1;
+    mask=mask<<1;
+  }
+} // }}}
+
+void send_morse_id (void) { // {{{
+  int x;
+  int mchar;
+  for(x=0;x<6;x++) {
+    mchar=Morse[x];
+    morse(mchar);
+    // Delay 7 "dits" between letters
+    aux_timer=7*MorseLen[(MorseDitLength&0x03)];
+    while(aux_timer) {
+      delay_cycles(1);
+    }
   }
 } // }}}
 
@@ -773,6 +862,21 @@ void main (void) { // {{{
     // Process RS232 Serial Buffer Flag }}} 
     if ( SECOND_FLAG ) {
       update_aux_out();
+      if ( SecondCounter ) {
+        SecondCounter--;
+      } else {
+        SecondCounter=60;
+        if ( MinuteCounter ) {
+          MinuteCounter--;
+        } else {
+          THIRTY_MIN_FLAG=1;
+          MinuteCounter = 30;
+        }
+      }
+    }
+    if ( THIRTY_MIN_FLAG ) {
+      send_morse_id();
+      THIRTY_MIN_FLAG=0;
     }
   	if ( COR_FLAG ) {
       process_cor();
@@ -787,8 +891,8 @@ void main (void) { // {{{
         }
       }
       printf("\n\r");
-      prompt();
       DTMF_IN_FLAG=0;
+      PROMPT_FLAG=1;
     }
     if ( DTMF_FLAG ) {
       process_dtmf();
@@ -797,6 +901,10 @@ void main (void) { // {{{
     if ( CLEAR_DTMF_FLAG ) {
       clear_dtmf_array();
       CLEAR_DTMF_FLAG=0;
+    }
+    if ( PROMPT_FLAG ) {
+      prompt();
+      PROMPT_FLAG=0;
     }
   } // End of while(1) main loop
 } // }}}

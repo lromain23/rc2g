@@ -15,6 +15,7 @@
 #fuses NOIESO
 #fuses NODEBUG
 #case
+#define MCHAR(c) c-'a'+10
 
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
@@ -25,6 +26,9 @@
 #use fast_io (e)
 
 //function headers
+void morse(char);
+void dit(void);
+void dah(void);
 void prompt(void);
 void increment(int);
 void init_variables(int1 src);
@@ -41,10 +45,12 @@ unsigned int AuxIn[3];
 unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
+unsigned int Morse[6];
 unsigned int COR_IN;
 unsigned int Polarity;
 unsigned int SiteID;
 unsigned int COR_EMUL;
+unsigned int MorseDitLength;
 // Variables accessed using linear addressing }}}
 
 // COR variables {{{
@@ -72,6 +78,7 @@ unsigned int1 sBufferFlag;
 #define STATUS    8
 #define REBOOT    9
 #define DTMF_SEND 10
+#define MORSE_SEND 11
 
 // Digital TrimPot
 //
@@ -79,6 +86,16 @@ unsigned int1 sBufferFlag;
 #define TRIMPOT_WRITE_CMD 0x50
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
+unsigned long aux_timer;
+#define AUX_TIMER_1S 31
+#define AUX_TIMER_500ms 16 
+#define AUX_TIMER_400ms 13 
+#define AUX_TIMER_300ms 10 
+#define AUX_TIMER_200ms 6
+#define AUX_TIMER_100ms 3
+#define AUX_TIMER_60ms 2
+#define AUX_TIMER_30ms 1
+const int MorseLen[4]={AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms,AUX_TIMER_300ms};
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -121,6 +138,7 @@ typedef struct {
 
 #define REG_NAME_SIZE 6
 unsigned int command,argument,value;
+#LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
@@ -181,9 +199,13 @@ void dtmf_write(int data,int1 rs);
 
 int1       COR_FLAG;
 int1       SECOND_FLAG;
+int1       MINUTE_FLAG;
+int1       THIRTY_MIN_FLAG;
+int        SecondCounter,MinuteCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
+int1       PROMPT_FLAG;
 
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
@@ -295,8 +317,15 @@ const char reg_name[][REG_NAME_SIZE]={
 	{"R3PTT"},	    // 29
 	{"R4PTT"},	    // 30
     {"SID"}, // 31
-    {"COR"}, // 32
-    {"CPOT"}, // 33
+    {"MRSL"}, // 32
+    {"MRS1"}, // 33
+    {"MRS2"}, // 34
+    {"MRS3"}, // 35
+    {"MRS4"}, // 36
+    {"MRS5"}, // 37
+    {"MRS6"}, // 38
+    {"COR"}, // 39
+    {"CPOT"}, // 40
 };
 
 
@@ -366,6 +395,13 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
 	{&SiteID        ,50          , EEPROM},
+	{&MorseDitLength ,1          , EEPROM},
+  {&Morse[0]      ,MCHAR('v')  ,EEPROM},
+  {&Morse[1]      ,MCHAR('e')  ,EEPROM},
+  {&Morse[2]      ,2           ,EEPROM},
+  {&Morse[3]      ,MCHAR('r')  ,EEPROM},
+  {&Morse[4]      ,MCHAR('e')  ,EEPROM},
+  {&Morse[5]      ,MCHAR('h')  ,EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };
