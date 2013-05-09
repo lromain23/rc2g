@@ -47,6 +47,7 @@ unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
 unsigned int Morse[6];
 unsigned int COR_IN;
+unsigned int Enable;
 unsigned int Polarity;
 unsigned int SiteID;
 unsigned int COR_EMUL;
@@ -285,47 +286,48 @@ const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 
 
 const char reg_name[][REG_NAME_SIZE]={
-	{"POL"},	// 0
-	{"R1G1"},	// 1
-	{"R1G2"},	// 2
-	{"R1G3"},	// 3
-	{"R1G4"},	// 4
-	{"R2G1"},	// 5
-	{"R2G2"},	// 6
-	{"R2G3"},	// 7
-	{"R2G4"},	// 8
-	{"R3G1"},	// 9
-	{"R3G2"},	// 10
-	{"R3G3"},	// 11
-	{"R3G4"},	// 12
-	{"R4G1"},	// 13
-	{"R4G2"},	// 14
-	{"R4G3"},	// 15
-	{"R4G4"},	// 16
-	{"XI1"},	// 17
-	{"XI2"},	// 18
-	{"XI3"},	// 19
-	{"XO1"},	// 20
-	{"XO2"},	// 21
-	{"XO3"},	// 22
-	{"R1P"},	// 23
-	{"R2P"},	// 24
-	{"R3P"},	// 25
-	{"R4P"},	// 26
-	{"R1PTT"},	    // 27
-	{"R2PTT"},	    // 28
-	{"R3PTT"},	    // 29
-	{"R4PTT"},	    // 30
-    {"SID"}, // 31
-    {"MRSL"}, // 32
-    {"MRS1"}, // 33
-    {"MRS2"}, // 34
-    {"MRS3"}, // 35
-    {"MRS4"}, // 36
-    {"MRS5"}, // 37
-    {"MRS6"}, // 38
-    {"COR"}, // 39
-    {"CPOT"}, // 40
+	{"EN  "},	  // 0
+	{"POL"},	  // 1
+	{"R1G1"},	  // 2
+	{"R1G2"},	  // 3
+	{"R1G3"},	  // 4
+	{"R1G4"},	  // 5
+	{"R2G1"},	  // 6
+	{"R2G2"},	  // 7
+	{"R2G3"},	  // 8
+	{"R2G4"},	  // 9
+	{"R3G1"},	  // 10
+	{"R3G2"},	  // 11
+	{"R3G3"},	  // 12
+	{"R3G4"},	  // 13
+	{"R4G1"},	  // 14
+	{"R4G2"},	  // 15
+	{"R4G3"},	  // 16
+	{"R4G4"},	  // 17
+	{"XI1"},	  // 18
+	{"XI2"},	  // 19
+	{"XI3"},	  // 20
+	{"XO1"},	  // 21
+	{"XO2"},	  // 22
+	{"XO3"},	  // 23
+	{"R1P"},	  // 24
+	{"R2P"},	  // 25
+	{"R3P"},	  // 26
+	{"R4P"},	  // 27
+	{"R1PTT"},  // 28
+	{"R2PTT"},  // 29
+	{"R3PTT"},  // 30
+	{"R4PTT"},  // 31
+    {"SID"},  // 32
+    {"MRSL"}, // 33
+    {"MRS1"}, // 34
+    {"MRS2"}, // 35
+    {"MRS3"}, // 36
+    {"MRS4"}, // 37
+    {"MRS5"}, // 38
+    {"MRS6"}, // 39
+    {"COR"},  // 40
+    {"CPOT"}, // 41
 };
 
 
@@ -363,6 +365,7 @@ const char reg_name[][REG_NAME_SIZE]={
 //	{26,&RX_PTT[3] ,0x07},
 //};
 struct sRegMap_t const RegMap[]={
+	{&Enable        ,15           ,EEPROM},
 	{&Polarity      ,15           ,EEPROM},
 	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
@@ -386,22 +389,22 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,4           , EEPROM},
 	{&AuxOut[1]     ,5           , EEPROM},
 	{&AuxOut[2]     ,6           , EEPROM},
-	{&RXPriority[0],1           , EEPROM},
-	{&RXPriority[1],5           , EEPROM},
-	{&RXPriority[2],5           , EEPROM},
-	{&RXPriority[3],3           , EEPROM},
+	{&RXPriority[0] ,1           , EEPROM},
+	{&RXPriority[1] ,5           , EEPROM},
+	{&RXPriority[2] ,5           , EEPROM},
+	{&RXPriority[3] ,3           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
 	{&SiteID        ,50          , EEPROM},
 	{&MorseDitLength ,1          , EEPROM},
-  {&Morse[0]      ,MCHAR('v')  ,EEPROM},
-  {&Morse[1]      ,MCHAR('e')  ,EEPROM},
-  {&Morse[2]      ,2           ,EEPROM},
-  {&Morse[3]      ,MCHAR('r')  ,EEPROM},
-  {&Morse[4]      ,MCHAR('e')  ,EEPROM},
-  {&Morse[5]      ,MCHAR('h')  ,EEPROM},
+  {&Morse[0]      ,MCHAR('v')  , EEPROM},
+  {&Morse[1]      ,MCHAR('e')  , EEPROM},
+  {&Morse[2]      ,2           , EEPROM},
+  {&Morse[3]      ,MCHAR('r')  , EEPROM},
+  {&Morse[4]      ,MCHAR('e')  , EEPROM},
+  {&Morse[5]      ,MCHAR('h')  , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };

@@ -233,7 +233,7 @@ void update_ptt(int cor) { // {{{
   CurrentCorIndex=cor;
 
   if ( cor ) {
-    ptt=RX_PTT[cor-1];
+    ptt=RX_PTT[cor-1] & Enable;
   } else {
     ptt=0;
   }
@@ -364,7 +364,12 @@ void process_cor (void) { // {{{
   cor_index=0;
   for(x=0;x<4;x++) {
     if ( cor_in & cor_mask ) {
-      rx_priority=RXPriority[x];
+      if ( Enable & cor_mask ) {
+        rx_priority=RXPriority[x];
+      } else {
+        // Radio is not enabled. Only listen for DTMF (if no other radio is enabled).
+        rx_priority = 0;
+      }
       if ( rx_priority > CurrentCorPriority ) {
         cor_priority_tmp = rx_priority;
         cor_index=x+1;

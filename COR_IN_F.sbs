@@ -1,0 +1,103 @@
+## SCL Builder Setup File: Do not edit!!
+
+## VERSION: 3.60.00.00
+## FORMAT:  v2.00.01
+## DEVICE:  PIC16F1937
+
+## PINREGACTIONS
+cyc
+No Repeat
+--
+&
+## ADVPINREGACTIONS
+SSPCON2.PEN
+SSPCON2.SEN
+PIR1.SSPIF
+--
+1
+COND1
+Cont
+1
+ms
+0
+0
+
+--
+1
+COND2
+Cont
+1
+ms
+0
+0
+
+--
+1
+COND3
+Cont
+1
+ms
+
+
+1
+--
+1
+COND4
+Cont
+10
+cyc
+
+
+1
+--
+&
+--
+COND1
+Bit
+SSPCON2.SEN
+=
+1
+1
+cyc
+
+--
+COND2
+Bit
+SSPCON2.PEN
+=
+1
+1
+cyc
+
+--
+COND3
+Bit
+SSPCON1.SSPEN
+=
+1
+10
+cyc
+
+--
+COND4
+Bit
+PIR1.SSPIF
+=
+0
+10
+cyc
+
+--
+&
+## CLOCK
+&
+## STIMULUSFILE
+&
+## RESPONSEFILE
+&
+## ASYNCH
+&
+## ADVANCEDSCL
+
+1
+&
