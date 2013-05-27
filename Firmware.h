@@ -46,6 +46,7 @@ unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
 unsigned int Morse[6];
+unsigned int AuxOp[3],AuxArg[3];
 unsigned int COR_IN;
 unsigned int Enable;
 unsigned int Polarity;
@@ -80,6 +81,18 @@ unsigned int1 sBufferFlag;
 #define REBOOT    9
 #define DTMF_SEND 10
 #define MORSE_SEND 11
+
+// Auxiliary Output Operators
+#define XO_IDLE 0
+#define XO_FOLLOW_COR0 0x10
+#define XO_FOLLOW_COR1 0x11
+#define XO_FOLLOW_COR2 0x12
+#define XO_FOLLOW_COR3 0x13
+#define XO_FOLLOW_COR_MASK  0x10
+#define XO_FOLLOW_IN 2
+
+// Auxiliary Output Operators
+#define XI_ENABLE 0x10
 
 // Digital TrimPot
 //
@@ -328,42 +341,14 @@ const char reg_name[][REG_NAME_SIZE]={
     {"MRS6"}, // 39
     {"COR"},  // 40
     {"CPOT"}, // 41
+    {"XOP1"}, // 42
+    {"XOP2"}, // 43
+    {"XOP3"}, // 44
+    {"XARG1"}, // 45
+    {"XARG2"}, // 46
+    {"XARG3"}, // 47
 };
 
-
-//struct sRegMap_t const RegMap[]={
-//	{0, &Polarity   ,15},
-//	{1, &RX_GAIN[0][0] ,DEFAULT_GAIN},
-//	{2, &RX_GAIN[0][1] ,DEFAULT_GAIN},
-//	{3, &RX_GAIN[0][2] ,DEFAULT_GAIN},
-//	{4, &RX_GAIN[0][3] ,DEFAULT_GAIN},
-//	{5, &RX_GAIN[1][0] ,DEFAULT_GAIN},
-//	{6, &RX_GAIN[1][1] ,DEFAULT_GAIN},
-//	{7, &RX_GAIN[1][2] ,DEFAULT_GAIN},
-//	{8, &RX_GAIN[1][3] ,DEFAULT_GAIN},
-//	{9, &RX_GAIN[2][0] ,DEFAULT_GAIN},
-//	{10,&RX_GAIN[2][1] ,DEFAULT_GAIN},
-//	{11,&RX_GAIN[2][2],DEFAULT_GAIN},
-//	{12,&RX_GAIN[2][3],DEFAULT_GAIN},
-//	{13,&RX_GAIN[3][0],DEFAULT_GAIN},
-//	{14,&RX_GAIN[3][1],DEFAULT_GAIN},
-//	{15,&RX_GAIN[3][2],DEFAULT_GAIN},
-//	{16,&RX_GAIN[3][3],DEFAULT_GAIN},
-//	{17,&AuxIn[0]   ,0},
-//	{18,&AuxIn[1]   ,0},
-//	{19,&AuxIn[2]   ,0},
-//	{20,&AuxOut[0]  ,1},
-//	{21,&AuxOut[1]  ,1},
-//	{22,&AuxOut[2]  ,1},
-//	{23,&CORPriority[0] ,0},
-//	{24,&CORPriority[1] ,5},
-//	{25,&CORPriority[2] ,5},
-//	{26,&CORPriority[3] ,3}
-//	{26,&RX_PTT[0] ,0x0E},
-//	{26,&RX_PTT[1] ,0x0D},
-//	{26,&RX_PTT[2] ,0x0B},
-//	{26,&RX_PTT[3] ,0x07},
-//};
 struct sRegMap_t const RegMap[]={
 	{&Enable        ,15           ,EEPROM},
 	{&Polarity      ,15           ,EEPROM},
@@ -407,6 +392,12 @@ struct sRegMap_t const RegMap[]={
   {&Morse[5]      ,MCHAR('h')  , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
+	{&AuxOp[0]      ,0x00        , EEPROM},
+	{&AuxOp[1]      ,0x00        , EEPROM},
+	{&AuxOp[2]      ,0x00        , EEPROM},
+	{&AuxArg[0]     ,0x00        , EEPROM},
+	{&AuxArg[1]     ,0x00        , EEPROM},
+	{&AuxArg[2]     ,0x00        , EEPROM},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

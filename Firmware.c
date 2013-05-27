@@ -77,7 +77,7 @@ void int_rtcc(void) { // {{{
   } else {
     COR_FLAG=1;
     SECOND_FLAG=1;
-    rtcc_cnt=31;
+    rtcc_cnt=30;
   }
   if (aux_timer ) {
     aux_timer--;
@@ -822,14 +822,47 @@ void romstrcpy(char *dest,rom char *src) { // {{{
   }
 } // }}}
 
+void ExecAuxOutOp(int op,int arg,int ID) { // {{{
+  int mask;
+  int cor_id;
+  mask = 1 << ID;
+  if ( op & XO_FOLLOW_COR_MASK ) { // FOLLOW_CORx
+    cor_id = op & 0x0F;
+    AuxOut[cor_id] = (COR_IN & arg) != 0;
+  }
+} // }}}
+
+void ExecAuxInOp(int op,int arg,int ID) { // {{{
+  int mask;
+  mask = 1 << ID;
+  switch(op) {
+    case XI_ENABLE: 
+      if (arg&mask) { // Enable
+        Enable |= (arg&mask);
+      } else { // Disable bit
+        Enable = Enable & ~(arg&mask);
+      }
+      break;
+  }
+} // }}}
+
 void update_aux_out(void) { // {{{
-  int x,mask;
+  int x;
+  int AuxOutOp,AuxInOp;
+  int AuxOutArg,AuxInArg;
+
   int1 out_bit;
-  mask=1;
   for(x=0;x<3;x++) {
-    out_bit = (AuxOut[x]&mask)==0;
+    AuxOutOp = AuxOp[x]&0x0F;
+    AuxOutArg = AuxArg[x]&0x0F;
+    ExecAuxOutOp(AuxOutOp,AuxOutArg,x); // This updates AuxOut global reg.
+    out_bit = (AuxOut[x])==0;
     output_bit(AUX_OUT_PIN[x],out_bit);
-    mask=mask<<1;
+    // Execute aux inputs {{{
+    AuxInOp = (AuxOp[x]&0xF0) >> 4;
+    AuxInArg = (AuxArg[x]&0xF0) >> 4;
+    ExecAuxInOp(AuxInOp,AuxInArg,x);
+    // }}}
   }
 } // }}}
 
@@ -878,6 +911,7 @@ void main (void) { // {{{
           MinuteCounter = 30;
         }
       }
+      SECOND_FLAG=0;
     }
     if ( THIRTY_MIN_FLAG ) {
       send_morse_id();
