@@ -81,23 +81,29 @@ unsigned int1 sBufferFlag;
 #define REBOOT    9
 #define DTMF_SEND 10
 #define MORSE_SEND 11
+#define I2C_SEND 12
 
 // Auxiliary Output Operators
-#define XO_IDLE 0
-#define XO_FOLLOW_COR0 0x10
-#define XO_FOLLOW_COR1 0x11
-#define XO_FOLLOW_COR2 0x12
-#define XO_FOLLOW_COR3 0x13
-#define XO_FOLLOW_COR_MASK  0x10
-#define XO_FOLLOW_IN 2
+#define AUXO_IDLE 0
+#define AUXO_FOLLOW_COR0 0x11
+#define AUXO_FOLLOW_COR1 0x12
+#define AUXO_FOLLOW_COR2 0x13
+#define AUXO_FOLLOW_COR3 0x18
+#define AUXO_FOLLOW_COR_MASK  0x10
+#define AUXO_FOLLOW_IN 2
 
 // Auxiliary Output Operators
-#define XI_ENABLE 0x10
+#define AUXI_ENABLE 0x10
 
 // Digital TrimPot
 //
 #define TRIMPOT_READ_CMD  0x51
 #define TRIMPOT_WRITE_CMD 0x50
+#define LCD_I2C_ADD 0x60
+#define LCD_LINE1 0x60
+#define LCD_LINE2 0x62
+#define LCD_LINE3 0x64
+#define LCD_LINE4 0x66
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
 unsigned long aux_timer;
@@ -154,6 +160,7 @@ typedef struct {
 unsigned int command,argument,value;
 #LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
+char LCD_str[21];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
 // It is used by the INCR or DECR commands
@@ -296,6 +303,7 @@ int1       PROMPT_FLAG;
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
+const int AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
 
 
 const char reg_name[][REG_NAME_SIZE]={
@@ -392,12 +400,12 @@ struct sRegMap_t const RegMap[]={
   {&Morse[5]      ,MCHAR('h')  , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
-	{&AuxOp[0]      ,0x00        , EEPROM},
-	{&AuxOp[1]      ,0x00        , EEPROM},
-	{&AuxOp[2]      ,0x00        , EEPROM},
-	{&AuxArg[0]     ,0x00        , EEPROM},
-	{&AuxArg[1]     ,0x00        , EEPROM},
-	{&AuxArg[2]     ,0x00        , EEPROM},
+	{&AuxOp[0]      ,AUXOP0      , EEPROM},
+	{&AuxOp[1]      ,AUXOP1      , EEPROM},
+	{&AuxOp[2]      ,AUXOP2      , EEPROM},
+	{&AuxArg[0]     ,AUXARG0     , EEPROM},
+	{&AuxArg[1]     ,AUXARG1     , EEPROM},
+	{&AuxArg[2]     ,AUXARG2     , EEPROM},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

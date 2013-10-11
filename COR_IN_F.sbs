@@ -96,6 +96,20 @@ cyc
 ## RESPONSEFILE
 &
 ## ASYNCH
+Pin
+RB4
+Set High
+
+
+-1
+--
+Pin
+RB4
+Set Low
+
+
+-1
+--
 &
 ## ADVANCEDSCL
 

@@ -84,6 +84,19 @@ void int_rtcc(void) { // {{{
   }
 } // }}}
 
+void lcd_send(int line,char * s) { // {{{
+  int lcd_cmd;
+
+  lcd_cmd = LCD_I2C_ADD | ((line<<1) & 0x06);
+  i2c_start();
+  i2c_write(lcd_cmd);
+  while(*s) {
+    i2c_write(*s++);
+  }
+  i2c_write(0); // EOL
+  i2c_stop();
+} // }}}
+
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
@@ -128,6 +141,14 @@ void execute_command(void) { // {{{
     		value = d0;
   	  }
       dtmf_send_digit(value&0x0F);
+      break;
+    case I2C_SEND:
+      printf("\n\rSending %d on I2C(%d)",value,LCD_I2C_ADD);
+      i2c_start();
+        i2c_write(LCD_I2C_ADD);
+        i2c_write(value); // Send Value
+        i2c_write(0); // End of transmission
+      i2c_stop();
       break;
     case MORSE_SEND:
       morse(value);
@@ -268,6 +289,8 @@ void update_ptt(int cor) { // {{{
   	}
     PROMPT_FLAG=1;
   }
+  sprintf(LCD_str,"COR: %x PTT:0x%x",cor,ptt);
+  lcd_send(1,LCD_str); // COR/PTT on line 1
 }// }}}
 
 int ValidKey(int index) { // {{{
@@ -767,6 +790,11 @@ void tokenize_sBuffer() { // {{{
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DTMF_SEND;
   } // }}}
+  // Check for "i2c" command {{{
+  strcpy(smatch_reg,"i2c");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=I2C_SEND;
+  } // }}}
   // Check for "morse" command {{{
   strcpy(smatch_reg,"morse");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
@@ -826,7 +854,7 @@ void ExecAuxOutOp(int op,int arg,int ID) { // {{{
   int mask;
   int cor_id;
   mask = 1 << ID;
-  if ( op & XO_FOLLOW_COR_MASK ) { // FOLLOW_CORx
+  if ( op & AUXO_FOLLOW_COR_MASK ) { // FOLLOW_CORx
     cor_id = op & 0x0F;
     AuxOut[cor_id] = (COR_IN & arg) != 0;
   }
@@ -836,7 +864,7 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
   int mask;
   mask = 1 << ID;
   switch(op) {
-    case XI_ENABLE: 
+    case AUXI_ENABLE: 
       if (arg&mask) { // Enable
         Enable |= (arg&mask);
       } else { // Disable bit
@@ -889,6 +917,7 @@ void main (void) { // {{{
     //COR_EMUL=1;
 #endif
   while(1) { // {{{
+    char tmp[5];
 	restart_wdt();
     // Process RS232 Serial Buffer Flag {{{
     // The sBufferFlag is set when a "#" or a "\r" is received.
@@ -922,16 +951,20 @@ void main (void) { // {{{
       COR_FLAG=0;
    	}
     if ( DTMF_IN_FLAG ) {
+      strcpy(LCD_str,"DTMF:");
       printf("\n\rDTMF=");
       for(x=0;x<DTMF_ARRAY_SIZE;x++) {
         if(DTMF_ARRAY[x].Strobe) {
           dtmf=(int)DTMF_ARRAY[x].Key;
+          sprintf(tmp,"%d ",dtmf);
+          strcat(LCD_str,tmp);
           printf(" %u",dtmf);
         }
       }
       printf("\n\r");
       DTMF_IN_FLAG=0;
       PROMPT_FLAG=1;
+      lcd_send(2,LCD_str); // Send DTMF on line 3
     }
     if ( DTMF_FLAG ) {
       process_dtmf();

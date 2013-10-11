@@ -9,3 +9,10 @@
 #define MORSEID3	MCHAR('r')
 #define MORSEID4	MCHAR('e')
 #define MORSEID5	MCHAR('h')
+
+#define AUXOP0 AUXO_FOLLOW_COR2
+#define AUXARG0 0x01 // Argument???
+#define AUXOP1 0
+#define AUXARG1 0
+#define AUXOP2 0
+#define AUXARG2 0
