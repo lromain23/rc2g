@@ -203,6 +203,7 @@ void set_trimpot(pot,value) { // {{{
   i2c_write(tx_value);
   i2c_stop();  
   printf("\n\rSetting Pot(%u) to %u",pot,value);
+
 } // }}}
 
 void morse (int c) { // {{{
@@ -249,6 +250,7 @@ void update_ptt(int cor) { // {{{
   int pot_val;
   int mask;
   int ptt;
+  int pval[4];
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -285,12 +287,16 @@ void update_ptt(int cor) { // {{{
 	// Update TrimPots
     for(pot=0;pot<4;pot++){
       pot_val=RX_GAIN[cor-1][pot];
-	  set_trimpot(pot,pot_val);
+      pval[pot]=pot_val;
+	    set_trimpot(pot,pot_val);
   	}
     PROMPT_FLAG=1;
   }
   sprintf(LCD_str,"COR: %x PTT:0x%x",cor,ptt);
   lcd_send(1,LCD_str); // COR/PTT on line 1
+  delay_ms(50);
+  sprintf(LCD_str,"POT:%d %d %d %d",pval[0],pval[1],pval[2],pval[3]);
+  lcd_send(0,LCD_str); // COR/PTT on line 0
 }// }}}
 
 int ValidKey(int index) { // {{{
