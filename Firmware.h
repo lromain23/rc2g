@@ -1,8 +1,4 @@
-#include <16LF1937.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include "SITE_XX.h"
+#include <16F1937.h>
 
 #fuses INTRC_IO
 #fuses NOPROTECT
@@ -15,6 +11,11 @@
 #fuses NOIESO
 #fuses NODEBUG
 #case
+
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
+#include "SITE_XX.h"
 #define MCHAR(c) c-'a'+10
 
 #use delay(internal=8M,restart_wdt)
@@ -46,7 +47,8 @@ unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
 unsigned int Morse[6];
-unsigned int AuxOp[3],AuxArg[3];
+unsigned int AuxInOp[3],AuxInArg[3];
+unsigned int AuxOutOp[3],AuxOutArg[3];
 unsigned int COR_IN;
 unsigned int Enable;
 unsigned int Polarity;
@@ -92,8 +94,14 @@ unsigned int1 sBufferFlag;
 #define AUXO_FOLLOW_COR_MASK  0x10
 #define AUXO_FOLLOW_IN 2
 
-// Auxiliary Output Operators
+// Auxiliary Input Operators
+// Use AuxInput[0,1,2] to control Enable register
+// Pin Map AUXI_ENABLE[7:4][3:0]
+//                    0001 abcd
+// abcd -- Enable mask
+// Set mask bits to 1 to make Enable bit controllable by AuxIn
 #define AUXI_ENABLE 0x10
+
 
 // Digital TrimPot
 //
@@ -398,14 +406,20 @@ struct sRegMap_t const RegMap[]={
   {&Morse[3]      ,MCHAR('r')  , EEPROM},
   {&Morse[4]      ,MCHAR('e')  , EEPROM},
   {&Morse[5]      ,MCHAR('h')  , EEPROM},
+	{&AuxOutOp[0]   ,AUXOUTOP0   , EEPROM},
+	{&AuxOutOp[1]   ,AUXOUTOP1   , EEPROM},
+	{&AuxOutOp[2]   ,AUXOUTOP2   , EEPROM},
+	{&AuxOutArg[0]  ,AUXOUTARG0  , EEPROM},
+	{&AuxOutArg[1]  ,AUXOUTARG1  , EEPROM},
+	{&AuxOutArg[2]  ,AUXOUTARG2  , EEPROM},
+	{&AuxInOp[0]    ,AUXINOP0    , EEPROM},
+	{&AuxInOp[1]    ,AUXINOP1    , EEPROM},
+	{&AuxInOp[2]    ,AUXINOP2    , EEPROM},
+	{&AuxInArg[0]   ,AUXINARG0   , EEPROM},
+	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
+	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
-	{&AuxOp[0]      ,AUXOP0      , EEPROM},
-	{&AuxOp[1]      ,AUXOP1      , EEPROM},
-	{&AuxOp[2]      ,AUXOP2      , EEPROM},
-	{&AuxArg[0]     ,AUXARG0     , EEPROM},
-	{&AuxArg[1]     ,AUXARG1     , EEPROM},
-	{&AuxArg[2]     ,AUXARG2     , EEPROM},
 };
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

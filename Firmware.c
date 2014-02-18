@@ -250,7 +250,7 @@ void update_ptt(int cor) { // {{{
   int pot_val;
   int mask;
   int ptt;
-  int pval[4];
+  unsigned pval[4]={0,0,0,0};
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -855,26 +855,35 @@ void romstrcpy(char *dest,rom char *src) { // {{{
 	c++;
   }
 } // }}}
-
+ 
 void ExecAuxOutOp(int op,int arg,int ID) { // {{{
   int mask;
   int cor_id;
   mask = 1 << ID;
-  if ( op & AUXO_FOLLOW_COR_MASK ) { // FOLLOW_CORx
-    cor_id = op & 0x0F;
-    AuxOut[cor_id] = (COR_IN & arg) != 0;
+  switch(op&0xF0) {
+    case AUXO_FOLLOW_COR_MASK: 
+      switch(op&0x0F) {
+        case 0x01:cor_id=0;break;
+        case 0x02:cor_id=1;break;
+        case 0x04:cor_id=2;break;
+        default: cor_id = 0;break;
+      }
+      AuxOut[cor_id] = (COR_IN & arg) != 0;
+    break;
   }
 } // }}}
 
 void ExecAuxInOp(int op,int arg,int ID) { // {{{
-  int mask;
+  unsigned mask;
+  int1 in_bit;
   mask = 1 << ID;
+  in_bit = input(AUX_IN_PIN[ID]);
   switch(op) {
     case AUXI_ENABLE: 
-      if (arg&mask) { // Enable
+      if (in_bit && (arg&mask) != 0) { // Enable
         Enable |= (arg&mask);
       } else { // Disable bit
-        Enable = Enable & ~(arg&mask);
+        Enable &= ~(arg&mask);
       }
       break;
   }
@@ -882,20 +891,20 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
 
 void update_aux_out(void) { // {{{
   int x;
-  int AuxOutOp,AuxInOp;
-  int AuxOutArg,AuxInArg;
-
+  int AuxOp;
+  int AuxArg;
   int1 out_bit;
+
   for(x=0;x<3;x++) {
-    AuxOutOp = AuxOp[x]&0x0F;
-    AuxOutArg = AuxArg[x]&0x0F;
-    ExecAuxOutOp(AuxOutOp,AuxOutArg,x); // This updates AuxOut global reg.
+    AuxOp = AuxOutOp[x]&0x0F;
+    AuxArg = AuxOutArg[x]&0x0F;
+    ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
     out_bit = (AuxOut[x])==0;
     output_bit(AUX_OUT_PIN[x],out_bit);
     // Execute aux inputs {{{
-    AuxInOp = (AuxOp[x]&0xF0) >> 4;
-    AuxInArg = (AuxArg[x]&0xF0) >> 4;
-    ExecAuxInOp(AuxInOp,AuxInArg,x);
+    AuxOp = (AuxInOp[x]&0xF0) >> 4;
+    AuxArg = (AuxInArg[x]&0xF0) >> 4;
+    ExecAuxInOp(AuxOp,AuxArg,x);
     // }}}
   }
 } // }}}
