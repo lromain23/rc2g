@@ -47,10 +47,10 @@ unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
 unsigned int Morse[6];
-unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int AuxOutOp[3],AuxOutArg[3];
+unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int COR_IN;
-unsigned int Enable;
+unsigned int Enable,Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID;
 unsigned int COR_EMUL;
@@ -87,20 +87,23 @@ unsigned int1 sBufferFlag;
 
 // Auxiliary Output Operators
 #define AUXO_IDLE 0
-#define AUXO_FOLLOW_COR0 0x11
-#define AUXO_FOLLOW_COR1 0x12
-#define AUXO_FOLLOW_COR2 0x13
-#define AUXO_FOLLOW_COR3 0x18
-#define AUXO_FOLLOW_COR_MASK  0x10
-#define AUXO_FOLLOW_IN 2
+#define AUXO_FOLLOW_COR 0x01
+#define AUXO_FOLLOW_COR0 0x01
+#define AUXO_FOLLOW_COR1 0x02
+#define AUXO_FOLLOW_COR2 0x03
+#define AUXO_FOLLOW_COR3 0x08
 
 // Auxiliary Input Operators
-// Use AuxInput[0,1,2] to control Enable register
-// Pin Map AUXI_ENABLE[7:4][3:0]
-//                    0001 abcd
-// abcd -- Enable mask
 // Set mask bits to 1 to make Enable bit controllable by AuxIn
-#define AUXI_ENABLE 0x10
+// The AUXI_ENABLE# words can be OR'ed to include other enable
+// signals controlled by the same AuxIn.
+// All signals that are not included as the argument will be 
+// gated off when the Aux Input is low.
+#define AUXI_ENABLE 0x01
+#define AUXI_ENABLE1 0x01
+#define AUXI_ENABLE2 0x02
+#define AUXI_ENABLE3 0x04
+#define AUXI_ENABLE4 0x08
 
 
 // Digital TrimPot
@@ -355,14 +358,20 @@ const char reg_name[][REG_NAME_SIZE]={
     {"MRS4"}, // 37
     {"MRS5"}, // 38
     {"MRS6"}, // 39
-    {"COR"},  // 40
-    {"CPOT"}, // 41
-    {"XOP1"}, // 42
-    {"XOP2"}, // 43
-    {"XOP3"}, // 44
-    {"XARG1"}, // 45
-    {"XARG2"}, // 46
-    {"XARG3"}, // 47
+    {"XOO1"}, // 40
+    {"XOO2"}, // 41
+    {"XOO3"}, // 42
+    {"XOA1"}, // 43
+    {"XOA2"}, // 44
+    {"XOA3"}, // 45
+    {"XIO1"}, // 46
+    {"XIO2"}, // 47
+    {"XIO3"}, // 48
+    {"XIA1"}, // 49
+    {"XIA2"}, // 50 
+    {"XIA3"}, // 51
+    {"COR"},  // 52
+    {"CPOT"} // 53
 };
 
 struct sRegMap_t const RegMap[]={
@@ -390,10 +399,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,4           , EEPROM},
 	{&AuxOut[1]     ,5           , EEPROM},
 	{&AuxOut[2]     ,6           , EEPROM},
-	{&RXPriority[0] ,1           , EEPROM},
-	{&RXPriority[1] ,5           , EEPROM},
-	{&RXPriority[2] ,5           , EEPROM},
-	{&RXPriority[3] ,3           , EEPROM},
+	{&RXPriority[0] ,2           , EEPROM},
+	{&RXPriority[1] ,6           , EEPROM},
+	{&RXPriority[2] ,6           , EEPROM},
+	{&RXPriority[3] ,4           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
@@ -421,5 +430,9 @@ struct sRegMap_t const RegMap[]={
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };
+
+
+// AuxInOp/AuxInArg are not initialized correctly.
+// Debug using RS232.
  	
 unsigned int const RegMapNum=sizeof(RegMap)/sizeof(struct sRegMap_t);

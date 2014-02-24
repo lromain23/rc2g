@@ -10,16 +10,16 @@
 #define MORSEID4	MCHAR('e')
 #define MORSEID5	MCHAR('h')
 
-#define AUXOUTOP0 AUXO_FOLLOW_COR2
-#define AUXOUTARG0 0x01 // Argument : Which CORs to follow
+#define AUXOUTOP0 AUXO_FOLLOW_COR // Operator
+#define AUXOUTARG0 AUXO_FOLLOW_COR1 | AUXO_FOLLOW_COR2 // Argument : Which CORs to follow
 #define AUXOUTOP1 0
 #define AUXOUTARG1 0
 #define AUXOUTOP2 0
 #define AUXOUTARG2 0
 
-#define AUXINOP0 0
+#define AUXINOP0 AUXI_ENABLE
+#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
 #define AUXINOP1 0
-#define AUXINOP2 0
-#define AUXINARG0 0
 #define AUXINARG1 0
+#define AUXINOP2 0
 #define AUXINARG2 0

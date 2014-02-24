@@ -256,7 +256,7 @@ void update_ptt(int cor) { // {{{
   CurrentCorIndex=cor;
 
   if ( cor ) {
-    ptt=RX_PTT[cor-1] & Enable;
+    ptt=RX_PTT[cor-1] & (Enable&Enable_Mask);
   } else {
     ptt=0;
   }
@@ -393,11 +393,11 @@ void process_cor (void) { // {{{
   cor_index=0;
   for(x=0;x<4;x++) {
     if ( cor_in & cor_mask ) {
-      if ( Enable & cor_mask ) {
+      if ( (Enable&Enable_Mask) & cor_mask ) {
         rx_priority=RXPriority[x];
       } else {
         // Radio is not enabled. Only listen for DTMF (if no other radio is enabled).
-        rx_priority = 0;
+        rx_priority = 1; // Least priority while still active.
       }
       if ( rx_priority > CurrentCorPriority ) {
         cor_priority_tmp = rx_priority;
@@ -857,33 +857,22 @@ void romstrcpy(char *dest,rom char *src) { // {{{
 } // }}}
  
 void ExecAuxOutOp(int op,int arg,int ID) { // {{{
-  int mask;
-  int cor_id;
-  mask = 1 << ID;
-  switch(op&0xF0) {
-    case AUXO_FOLLOW_COR_MASK: 
-      switch(op&0x0F) {
-        case 0x01:cor_id=0;break;
-        case 0x02:cor_id=1;break;
-        case 0x04:cor_id=2;break;
-        default: cor_id = 0;break;
-      }
-      AuxOut[cor_id] = (COR_IN & arg) != 0;
+  switch(op) {
+    case AUXO_FOLLOW_COR: 
+      AuxOut[ID] = (COR_IN & arg) != 0;
     break;
   }
 } // }}}
 
 void ExecAuxInOp(int op,int arg,int ID) { // {{{
-  unsigned mask;
   int1 in_bit;
-  mask = 1 << ID;
   in_bit = input(AUX_IN_PIN[ID]);
   switch(op) {
     case AUXI_ENABLE: 
-      if (in_bit && (arg&mask) != 0) { // Enable
-        Enable |= (arg&mask);
+      if (in_bit) { // Enable
+        Enable_Mask = arg;
       } else { // Disable bit
-        Enable &= ~(arg&mask);
+        Enable_Mask = 0x0F;
       }
       break;
   }
@@ -896,14 +885,14 @@ void update_aux_out(void) { // {{{
   int1 out_bit;
 
   for(x=0;x<3;x++) {
-    AuxOp = AuxOutOp[x]&0x0F;
-    AuxArg = AuxOutArg[x]&0x0F;
+    AuxOp = AuxOutOp[x];
+    AuxArg = AuxOutArg[x];
     ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
     out_bit = (AuxOut[x])==0;
     output_bit(AUX_OUT_PIN[x],out_bit);
     // Execute aux inputs {{{
-    AuxOp = (AuxInOp[x]&0xF0) >> 4;
-    AuxArg = (AuxInArg[x]&0xF0) >> 4;
+    AuxOp = AuxInOp[x];
+    AuxArg = AuxInArg[x];
     ExecAuxInOp(AuxOp,AuxArg,x);
     // }}}
   }
