@@ -110,6 +110,13 @@ Set Low
 
 -1
 --
+Pin
+RB6
+Toggle
+
+
+-1
+--
 &
 ## ADVANCEDSCL
 

@@ -259,6 +259,10 @@ void update_ptt(int cor) { // {{{
     ptt=RX_PTT[cor-1] & (Enable&Enable_Mask);
   } else {
     ptt=0;
+    if ( COR_DROP_FLAG ) {
+      COR_DROP_FLAG=0;
+      send_tail();
+    }
   }
 
 
@@ -389,6 +393,9 @@ void process_cor (void) { // {{{
     CurrentCorPriority=0;
     CurrentCorMask=0;
     do_update_ptt=1;
+    if ( (cor_in & Enable & Enable_Mask) == 0x00) {
+      COR_DROP_FLAG=1;
+    }
   }
   cor_index=0;
   for(x=0;x<4;x++) {
@@ -688,6 +695,8 @@ void initialize (void) { // {{{
   setup_wdt(WDT_2S);
   WPUB=0x00;
   COR_IN=0;
+  COR_DROP_FLAG=0;
+  TailChar=MCHAR('e');
   LastRegisterIndexValid=0;
   LastRegisterIndex=0;
   CurrentCorMask=0;
@@ -709,6 +718,7 @@ void initialize (void) { // {{{
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
+  Enable_Mask = 0x0F;
   header();
   // C7 : UART RX
   // C6 : UART TX
@@ -870,11 +880,17 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
   switch(op) {
     case AUXI_ENABLE: 
       if (in_bit) { // Enable
-        Enable_Mask = arg;
-      } else { // Disable bit
-        Enable_Mask = 0x0F;
+        Enable_Mask &= arg;
+      } else { // AuxIn is not enabled
+        Enable_Mask |= (~arg & 0x0F);
       }
       break;
+    case AUXI_TAIL:
+      if ( in_bit ) {
+        COR_DROP_FLAG=1;
+        TailChar=arg;
+      }
+    break;
   }
 } // }}}
 
@@ -984,3 +1000,9 @@ void main (void) { // {{{
     }
   } // End of while(1) main loop
 } // }}}
+
+// send_tail {{{
+void send_tail(void) {
+  morse(TailChar);
+}
+// send_tail }}}

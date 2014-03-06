@@ -27,6 +27,7 @@
 #use fast_io (e)
 
 //function headers
+void send_tail(void);
 void morse(char);
 void dit(void);
 void dah(void);
@@ -55,6 +56,7 @@ unsigned int Polarity;
 unsigned int SiteID;
 unsigned int COR_EMUL;
 unsigned int MorseDitLength;
+unsigned int TailChar;
 // Variables accessed using linear addressing }}}
 
 // COR variables {{{
@@ -104,6 +106,9 @@ unsigned int1 sBufferFlag;
 #define AUXI_ENABLE2 0x02
 #define AUXI_ENABLE3 0x04
 #define AUXI_ENABLE4 0x08
+
+#define AUXI_TAIL 0x02
+#define AUXI_TAIL_CHAR MCHAR('s')
 
 
 // Digital TrimPot
@@ -233,6 +238,7 @@ int1       COR_FLAG;
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
+int1       COR_DROP_FLAG;
 int        SecondCounter,MinuteCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
