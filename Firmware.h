@@ -240,6 +240,7 @@ int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
 int1       COR_DROP_FLAG;
 int        SecondCounter,MinuteCounter;
+unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
@@ -248,6 +249,7 @@ int1       PROMPT_FLAG;
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
 // DEFAULT -- Initializes variables using values in ROM
+#define PTT_TIMEOUT_SECS 60*5 // 5 mins timeout
 #define USE_EEPROM_VARS 1
 #define USE_DEFAULT_VARS 0
 #define EEPROM   1

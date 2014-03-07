@@ -100,21 +100,49 @@ Pin
 RB4
 Set High
 
-
+DTMF in
 -1
 --
 Pin
 RB4
 Set Low
 
-
+DTMF in
 -1
 --
 Pin
 RB6
 Toggle
 
+Aux 0
+-1
+--
+Pin
+RB0
+Toggle
 
+COR0
+-1
+--
+Pin
+RB1
+Toggle
+
+COR1
+-1
+--
+Pin
+RB2
+Toggle
+
+COR2
+-1
+--
+Pin
+RB3
+Toggle
+
+COR3
 -1
 --
 &

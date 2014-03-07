@@ -389,6 +389,7 @@ void process_cor (void) { // {{{
   cor_mask=1;
   do_update_ptt=0;
   cor_in = COR_IN | (COR_EMUL&0x0F);
+  // Different COR was waiting for the active one to fall.
   if ( CurrentCorPriority && !(cor_in&CurrentCorMask) ) {
     CurrentCorPriority=0;
     CurrentCorMask=0;
@@ -406,10 +407,13 @@ void process_cor (void) { // {{{
         // Radio is not enabled. Only listen for DTMF (if no other radio is enabled).
         rx_priority = 1; // Least priority while still active.
       }
+      // New COR is being captured.
+      // Initialize TOT timer
       if ( rx_priority > CurrentCorPriority ) {
         cor_priority_tmp = rx_priority;
         cor_index=x+1;
         do_update_ptt=1;
+        TOT_SecondCounter=PTT_TIMEOUT_SECS;
       }
     }
     cor_mask = cor_mask << 1;
@@ -947,8 +951,19 @@ void main (void) { // {{{
       sBufferFlag=0;
     }
     // Process RS232 Serial Buffer Flag }}} 
+	restart_wdt();
     if ( SECOND_FLAG ) {
       update_aux_out();
+      // Time Out PTT {{{
+      if ( TOT_SecondCounter ) {
+        TOT_SecondCounter--;
+      } else if ( COR_IN != 0x00 ) {
+        update_ptt(0);
+        printf("\n\r# PTT Timeout!\n");
+        PROMPT_FLAG=1;
+      }
+      // }}}
+	    restart_wdt();
       if ( SecondCounter ) {
         SecondCounter--;
       } else {
@@ -965,6 +980,7 @@ void main (void) { // {{{
     if ( THIRTY_MIN_FLAG ) {
       send_morse_id();
       THIRTY_MIN_FLAG=0;
+	    restart_wdt();
     }
   	if ( COR_FLAG ) {
       process_cor();
