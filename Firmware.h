@@ -324,7 +324,6 @@ const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 const int AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
 
-
 const char reg_name[][REG_NAME_SIZE]={
 	{"EN  "},	  // 0
 	{"POL"},	  // 1
@@ -384,7 +383,7 @@ const char reg_name[][REG_NAME_SIZE]={
 
 struct sRegMap_t const RegMap[]={
 	{&Enable        ,15           ,EEPROM},
-	{&Polarity      ,15           ,EEPROM},
+	{&Polarity      ,POLARITY_DEF_VAL,EEPROM},
 	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][2] ,DEFAULT_GAIN, EEPROM},
@@ -401,12 +400,12 @@ struct sRegMap_t const RegMap[]={
 	{&RX_GAIN[3][1] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][3] ,DEFAULT_GAIN, EEPROM},
-	{&AuxIn[0]      ,1           , EEPROM},
-	{&AuxIn[1]      ,2           , EEPROM},
-	{&AuxIn[2]      ,3           , EEPROM},
-	{&AuxOut[0]     ,4           , EEPROM},
-	{&AuxOut[1]     ,5           , EEPROM},
-	{&AuxOut[2]     ,6           , EEPROM},
+	{&AuxIn[0]      ,0           , EEPROM},
+	{&AuxIn[1]      ,0           , EEPROM},
+	{&AuxIn[2]      ,0           , EEPROM},
+	{&AuxOut[0]     ,0           , EEPROM},
+	{&AuxOut[1]     ,0           , EEPROM},
+	{&AuxOut[2]     ,0           , EEPROM},
 	{&RXPriority[0] ,2           , EEPROM},
 	{&RXPriority[1] ,6           , EEPROM},
 	{&RXPriority[2] ,6           , EEPROM},

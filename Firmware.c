@@ -65,8 +65,8 @@ void RB0_INT (void) { // {{{
           DTMF_ptr++;
         }
       }
-      clear_interrupt(INT_RB4_H2L);
     }
+	clear_interrupt(INT_RB4_H2L);
   }
 } // }}}
 
@@ -882,6 +882,8 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
   int1 in_bit;
   in_bit = input(AUX_IN_PIN[ID]);
   switch(op) {
+// Must add a method to reset the Enable_Mask to 0x0F when
+// the operator is not AUXI_ENABLE
     case AUXI_ENABLE: 
       if (in_bit) { // Enable
         Enable_Mask &= arg;
@@ -985,6 +987,7 @@ void main (void) { // {{{
   	if ( COR_FLAG ) {
       process_cor();
       COR_FLAG=0;
+	  restart_wdt();
    	}
     if ( DTMF_IN_FLAG ) {
       strcpy(LCD_str,"DTMF:");
@@ -996,15 +999,18 @@ void main (void) { // {{{
           strcat(LCD_str,tmp);
           printf(" %u",dtmf);
         }
+	    restart_wdt();
       }
       printf("\n\r");
       DTMF_IN_FLAG=0;
       PROMPT_FLAG=1;
       lcd_send(2,LCD_str); // Send DTMF on line 3
+	  restart_wdt();
     }
     if ( DTMF_FLAG ) {
       process_dtmf();
       DTMF_FLAG=0;
+	  restart_wdt();
     }
     if ( CLEAR_DTMF_FLAG ) {
       clear_dtmf_array();
@@ -1013,6 +1019,7 @@ void main (void) { // {{{
     if ( PROMPT_FLAG ) {
       prompt();
       PROMPT_FLAG=0;
+	  restart_wdt();
     }
   } // End of while(1) main loop
 } // }}}
