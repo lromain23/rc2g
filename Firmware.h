@@ -40,6 +40,7 @@ void tokenize_sBuffer(void);
 void store_variables(void);
 void clear_dtmf_array(void);
 void dtmf_send_digit(int);
+void romstrcpy(char *,rom char *);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
@@ -92,7 +93,7 @@ unsigned int1 sBufferFlag;
 #define AUXO_FOLLOW_COR 0x01
 #define AUXO_FOLLOW_COR0 0x01
 #define AUXO_FOLLOW_COR1 0x02
-#define AUXO_FOLLOW_COR2 0x03
+#define AUXO_FOLLOW_COR2 0x04
 #define AUXO_FOLLOW_COR3 0x08
 
 // Auxiliary Input Operators
@@ -324,8 +325,8 @@ const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 const int AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
 
-const char reg_name[][REG_NAME_SIZE]={
-	{"EN  "},	  // 0
+char const reg_name[][REG_NAME_SIZE]={
+	{"EN"},	  // 0
 	{"POL"},	  // 1
 	{"R1G1"},	  // 2
 	{"R1G2"},	  // 3

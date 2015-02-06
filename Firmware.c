@@ -156,7 +156,8 @@ void execute_command(void) { // {{{
   }
 } // }}}
 void process_sBuffer(void) { // {{{
-  unsigned int x;
+  unsigned long x;
+  rom char * cPtr;
   char rname[REG_NAME_SIZE];
 
   tokenize_sBuffer();
@@ -164,7 +165,8 @@ void process_sBuffer(void) { // {{{
   argument=-1;
   // Find matching reg_id
   for(x=0;x<RegMapNum;x++) {
-	  strcpy(rname,reg_name[x]);
+    cPtr = &reg_name + (x * REG_NAME_SIZE);
+	  romstrcpy(rname,cPtr);
     if(stricmp(argument_name,rname)==0) {
 	    argument=x;
   	}
@@ -459,9 +461,10 @@ void header (void) { // {{{
 } // }}}
 
 void status (void) { // {{{
-  int x;
+  unsigned long x;
   int nak;
   int8 pot_val;
+  rom char * cPtr;
   unsigned int * regPtr;
   int dtmf_in;
   char rname[REG_NAME_SIZE];
@@ -469,10 +472,14 @@ void status (void) { // {{{
   header();
   dtmf_in=dtmf_read(CONTROL_REG);
   for(x=0;x<RegMapNum;x++) {
-//    reg_index = RegMap[x].reg_name_index;
-	strcpy(rname,reg_name[x]);
-    regPtr=RegMap[x].reg_ptr;
-    printf("[%02u] %s %u\n\r",x,rname,*regPtr);
+// Bug when X = 0x2B (6). cPtr wraps back to 0x017C!!!
+// reg_name = 0x017A.
+// cPtr is assigned to 0x017C
+    cPtr = &reg_name + (x*REG_NAME_SIZE);
+    romstrcpy(rname,cPtr);
+	regPtr=RegMap[x].reg_ptr;
+    printf("[%02Lu] %s %u\n\r",x,rname,*regPtr);
+    restart_wdt();
   }
   printf("\n\n\rCOR : %u (Emulated : %u)",COR_IN,COR_EMUL);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
@@ -488,7 +495,7 @@ void status (void) { // {{{
 	  }
       pot_val=i2c_read(nak);
 	  pot_val=pot_val&0x3F;
-      printf(" Pot(%d)=%d",x,pot_val);
+      printf(" Pot(%Lu)=%d",x,pot_val);
   }
   i2c_stop();
   PROMPT_FLAG=1;
@@ -986,8 +993,11 @@ void main (void) { // {{{
     }
   	if ( COR_FLAG ) {
       process_cor();
+      // Call update_aux_out to instantly update AuxOut 
+      // values when one of them is following a COR.
+      update_aux_out(); 
       COR_FLAG=0;
-	  restart_wdt();
+  	  restart_wdt();
    	}
     if ( DTMF_IN_FLAG ) {
       strcpy(LCD_str,"DTMF:");
