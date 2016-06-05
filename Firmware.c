@@ -263,7 +263,9 @@ void update_ptt(int cor) { // {{{
     ptt=0;
     if ( COR_DROP_FLAG ) {
       COR_DROP_FLAG=0;
-      send_tail();
+      if ( TailChar ) {
+        send_tail();
+      }
     }
   }
 
@@ -398,6 +400,10 @@ void process_cor (void) { // {{{
     do_update_ptt=1;
     if ( (cor_in & Enable & Enable_Mask) == 0x00) {
       COR_DROP_FLAG=1;
+      if ( Tail ) {
+        // Tail register has priority over any aux input char
+        TailChar=Tail;
+      }
     }
   }
   cor_index=0;
@@ -462,15 +468,18 @@ void header (void) { // {{{
 
 void status (void) { // {{{
   unsigned long x;
+  char y;
   int nak;
   int8 pot_val;
   rom char * cPtr;
   unsigned int * regPtr;
   int dtmf_in;
+  char aux_in;
   char rname[REG_NAME_SIZE];
   clearscr();
   header();
   dtmf_in=dtmf_read(CONTROL_REG);
+  aux_in = 0;
   for(x=0;x<RegMapNum;x++) {
 // Bug when X = 0x2B (6). cPtr wraps back to 0x017C!!!
 // reg_name = 0x017A.
@@ -481,9 +490,15 @@ void status (void) { // {{{
     printf("[%02Lu] %s %u\n\r",x,rname,*regPtr);
     restart_wdt();
   }
-  printf("\n\n\rCOR : %u (Emulated : %u)",COR_IN,COR_EMUL);
+  for(y=0;y<3;y++) {
+    if(input(AUX_IN_PIN[y])==1) {
+      aux_in += 2<<y;
+    }
+  }
+  printf("\n\n\rCOR : %u (Emulated : %u); AuxIn = %u",COR_IN,COR_EMUL,aux_in);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
   printf("\n\rTRIMPOTS : ");
+  printf("\n\r");
 
   i2c_start();
   i2c_write(TRIMPOT_READ_CMD);
@@ -707,13 +722,13 @@ void initialize (void) { // {{{
   WPUB=0x00;
   COR_IN=0;
   COR_DROP_FLAG=0;
-  TailChar=MCHAR('e');
   LastRegisterIndexValid=0;
   LastRegisterIndex=0;
   CurrentCorMask=0;
   CurrentCorPriority=0;
   CurrentCorIndex=0;
   CurrentTrimPot=0;
+  setup_adc(NO_ANALOGS);
   set_tris_b(0xFF);
   set_tris_d(0x00);
   set_tris_e(0xF8);
@@ -753,6 +768,7 @@ void initialize (void) { // {{{
   THIRTY_MIN_FLAG=0;
   MINUTE_FLAG=0;
   PROMPT_FLAG=1;
+  TailChar=Tail;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -878,16 +894,29 @@ void romstrcpy(char *dest,rom char *src) { // {{{
 } // }}}
  
 void ExecAuxOutOp(int op,int arg,int ID) { // {{{
+  int cor_in_local;
+  int larg,uarg; // Lower and upper nibbles
+  int1 in_bit;
+  in_bit = input(AUX_IN_PIN[ID]);
+  larg = arg & 0x0F;
+  uarg = (arg & 0xF0) >> 4;
+  cor_in_local = COR_IN | (COR_EMUL&0x0F);
   switch(op) {
-    case AUXO_FOLLOW_COR: 
-      AuxOut[ID] = (COR_IN & arg) != 0;
+    case AUX_OUT_FOLLOW_COR: 
+      AuxOut[ID] = (cor_in_local & arg) != 0;
+    break;
+    case AUX_OUT_FOLLOW_AUX_IN:
+      // Lower argument (larg) enables the comparison
+      // Upper argument (uarg) inverts the output
+      AuxOut[ID] = ((in_bit & larg) ^ uarg)!=0;
     break;
   }
 } // }}}
 
 void ExecAuxInOp(int op,int arg,int ID) { // {{{
   int1 in_bit;
-  in_bit = input(AUX_IN_PIN[ID]);
+  in_bit = input(AUX_IN_PIN[ID])==1;
+//printf("\n\r  In:%u",in_bit);
   switch(op) {
 // Must add a method to reset the Enable_Mask to 0x0F when
 // the operator is not AUXI_ENABLE
@@ -898,19 +927,29 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
         Enable_Mask |= (~arg & 0x0F);
       }
       break;
-    case AUXI_TAIL:
-      if ( in_bit ) {
+    case AUXI_TAIL_WHEN_HI:
+      if ( in_bit==1 ) {
         COR_DROP_FLAG=1;
         TailChar=arg;
+      } else {
+        TailChar=0;
+      }
+    break;
+    case AUXI_TAIL_WHEN_LO:
+      if ( in_bit==0 ) {
+        COR_DROP_FLAG=1;
+        TailChar=arg;
+      } else {
+        TailChar=0;
       }
     break;
   }
 } // }}}
 
 void update_aux_out(void) { // {{{
-  int x;
-  int AuxOp;
-  int AuxArg;
+  char x;
+  char AuxOp;
+  char AuxArg;
   int1 out_bit;
 
   for(x=0;x<3;x++) {
@@ -922,6 +961,7 @@ void update_aux_out(void) { // {{{
     // Execute aux inputs {{{
     AuxOp = AuxInOp[x];
     AuxArg = AuxInArg[x];
+//printf("\n\rExecAuxInOp[%u]; Op:%u, Arg:%u",x,AuxOp,AuxArg);
     ExecAuxInOp(AuxOp,AuxArg,x);
     // }}}
   }

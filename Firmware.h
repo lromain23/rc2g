@@ -15,8 +15,9 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include "SITE_XX.h"
 #define MCHAR(c) c-'a'+10
+
+#define TAIL_CHAR 0
 
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
@@ -55,6 +56,7 @@ unsigned int COR_IN;
 unsigned int Enable,Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID;
+unsigned int Tail;
 unsigned int COR_EMUL;
 unsigned int MorseDitLength;
 unsigned int TailChar;
@@ -89,12 +91,20 @@ unsigned int1 sBufferFlag;
 #define I2C_SEND 12
 
 // Auxiliary Output Operators
-#define AUXO_IDLE 0
-#define AUXO_FOLLOW_COR 0x01
-#define AUXO_FOLLOW_COR0 0x01
-#define AUXO_FOLLOW_COR1 0x02
-#define AUXO_FOLLOW_COR2 0x04
-#define AUXO_FOLLOW_COR3 0x08
+#define AUX_OUT_IDLE 0
+#define AUX_OUT_FOLLOW_COR 0x01
+#define AUX_OUT_FOLLOW_COR0 0x01
+#define AUX_OUT_FOLLOW_COR1 0x02
+#define AUX_OUT_FOLLOW_COR2 0x04
+#define AUX_OUT_FOLLOW_COR3 0x08
+// Follow AUX_IN
+#define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define AUX_OUT_FOLLOW_AUX_IN0 0x01
+#define AUX_OUT_FOLLOW_AUX_IN0_INV 0x11
+#define AUX_OUT_FOLLOW_AUX_IN1 0x02
+#define AUX_OUT_FOLLOW_AUX_IN1_INV 0x22
+#define AUX_OUT_FOLLOW_AUX_IN2 0x04
+#define AUX_OUT_FOLLOW_AUX_IN2_INV 0x44
 
 // Auxiliary Input Operators
 // Set mask bits to 1 to make Enable bit controllable by AuxIn
@@ -108,7 +118,8 @@ unsigned int1 sBufferFlag;
 #define AUXI_ENABLE3 0x04
 #define AUXI_ENABLE4 0x08
 
-#define AUXI_TAIL 0x02
+#define AUXI_TAIL_WHEN_LO 0x02
+#define AUXI_TAIL_WHEN_HI 0x03
 #define AUXI_TAIL_CHAR MCHAR('s')
 
 
@@ -378,12 +389,15 @@ char const reg_name[][REG_NAME_SIZE]={
     {"XIA1"}, // 49
     {"XIA2"}, // 50 
     {"XIA3"}, // 51
-    {"COR"},  // 52
-    {"CPOT"} // 53
+    {"TAIL"}, // 52
+    {"COR"},  // 53
+    {"CPOT"}  // 54
 };
 
+#include "SITE_XX.h"
+
 struct sRegMap_t const RegMap[]={
-	{&Enable        ,15           ,EEPROM},
+	{&Enable        ,ENABLE_DEFAULT  ,EEPROM},
 	{&Polarity      ,POLARITY_DEF_VAL,EEPROM},
 	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
@@ -435,6 +449,7 @@ struct sRegMap_t const RegMap[]={
 	{&AuxInArg[0]   ,AUXINARG0   , EEPROM},
 	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
 	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
+  {&Tail          ,TAIL_CHAR   , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };
