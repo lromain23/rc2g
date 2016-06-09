@@ -34,6 +34,7 @@ void dit(void);
 void dah(void);
 void prompt(void);
 void increment(int);
+void pot_values_to_lcd(void);
 void init_variables(int1 src);
 void status(void);
 void set_var(void);
@@ -292,6 +293,7 @@ int1       PROMPT_FLAG;
 #define SINGLE_TONE 0x04
 #define ST_ROW   0x00
 #define ST_COL   0x08
+#define LCD_ENABLE
 
 #define AUX_IN0  PIN_B6
 #define AUX_IN1  PIN_B7

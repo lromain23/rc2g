@@ -86,20 +86,27 @@ void int_rtcc(void) { // {{{
 
 void lcd_send(int line,char * s) { // {{{
   int lcd_cmd;
+  int1 ack;
 
-  lcd_cmd = LCD_I2C_ADD | ((line<<1) & 0x06);
+#ifdef LCD_ENABLE
+  lcd_cmd = LCD_I2C_ADD | ((line<<1) & 0x0e);
   i2c_start();
-  i2c_write(lcd_cmd);
+  ack=i2c_write(lcd_cmd);
+  if ( ack!=0 ) {
+    printf("\n\rI2C ERROR : No ACK from LCD : %u",ack);
+  }
   while(*s) {
     i2c_write(*s++);
   }
   i2c_write(0); // EOL
   i2c_stop();
+#endif
 } // }}}
 
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
+  int lcd_cmd;
   switch(command) {
     case SET_REG:
       set_var();
@@ -143,12 +150,15 @@ void execute_command(void) { // {{{
       dtmf_send_digit(value&0x0F);
       break;
     case I2C_SEND:
-      printf("\n\rSending %d on I2C(%d)",value,LCD_I2C_ADD);
-      i2c_start();
-        i2c_write(LCD_I2C_ADD);
-        i2c_write(value); // Send Value
-        i2c_write(0); // End of transmission
-      i2c_stop();
+      // I2C special commands
+      // 0 - 0b100X - Restart LCD
+      // 1 - 0b101X - Clear LCD
+      // 2 - 0b110X - Init LCD + Welcome screen
+      // 3 - 0b111X - Not implemented
+      lcd_cmd=4+(value&0x03);
+      sprintf(LCD_str,"I2C(%d) CMD : %d",LCD_I2C_ADD,lcd_cmd);
+      printf("\n\r%s",LCD_str);
+      lcd_send(lcd_cmd,LCD_str);
       break;
     case MORSE_SEND:
       morse(value);
@@ -198,10 +208,14 @@ void clearscr(void) { // {{{
 
 void set_trimpot(pot,value) { // {{{
   int tx_value;
+  int1 ack;
   tx_value=pot << 6;
   tx_value=tx_value + (value & 0x3F);
   i2c_start();
-  i2c_write(TRIMPOT_WRITE_CMD);
+  ack=i2c_write(TRIMPOT_WRITE_CMD);
+  if ( ack != 0) {
+    printf("\n\rI2C Error : No ACK from trimpot : %u",ack);
+  }
   i2c_write(tx_value);
   i2c_stop();  
   printf("\n\rSetting Pot(%u) to %u",pot,value);
@@ -248,11 +262,12 @@ void morse (int c) { // {{{
 } // }}}
 
 void update_ptt(int cor) { // {{{
-  int x,pot;
+  char x,pot;
   int pot_val;
   int mask;
   int ptt;
-  unsigned pval[4]={0,0,0,0};
+  char COR_s[5]={'0','0','0','0',0};
+  char PTT_s[5]={'0','0','0','0',0};
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -283,9 +298,12 @@ void update_ptt(int cor) { // {{{
         rx_bit=0;
       }
       ptt_bit=(ptt&mask)!=0;
-	}
+	  }
     output_bit(RX_PIN[x],rx_bit);
     output_bit(PTT_PIN[x],ptt_bit);
+    if(ptt_bit) {
+      PTT_s[x]='1';
+    }
     mask=mask<<1;
   } 
   if(!cor) {
@@ -295,16 +313,17 @@ void update_ptt(int cor) { // {{{
 	// Update TrimPots
     for(pot=0;pot<4;pot++){
       pot_val=RX_GAIN[cor-1][pot];
-      pval[pot]=pot_val;
 	    set_trimpot(pot,pot_val);
   	}
     PROMPT_FLAG=1;
   }
-  sprintf(LCD_str,"COR: %x PTT:0x%x",cor,ptt);
+  if(cor>0) {
+    COR_s[cor-1]='1';
+  }
+  sprintf(LCD_str,"COR:%s PTT:%s",COR_s,PTT_s);
   lcd_send(1,LCD_str); // COR/PTT on line 1
   delay_ms(50);
-  sprintf(LCD_str,"POT:%d %d %d %d",pval[0],pval[1],pval[2],pval[3]);
-  lcd_send(0,LCD_str); // COR/PTT on line 0
+  pot_values_to_lcd();
 }// }}}
 
 int ValidKey(int index) { // {{{
@@ -469,8 +488,6 @@ void header (void) { // {{{
 void status (void) { // {{{
   unsigned long x;
   char y;
-  int nak;
-  int8 pot_val;
   rom char * cPtr;
   unsigned int * regPtr;
   int dtmf_in;
@@ -497,23 +514,37 @@ void status (void) { // {{{
   }
   printf("\n\n\rCOR : %u (Emulated : %u); AuxIn = %u",COR_IN,COR_EMUL,aux_in);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
-  printf("\n\rTRIMPOTS : ");
-  printf("\n\r");
+  pot_values_to_lcd();
+  PROMPT_FLAG=1;
+} // }}}
 
+void pot_values_to_lcd (void) { // {{{
+  char x;
+  int8 pot_val;
+  int1 ack,ack_in;
+  unsigned pval[4]={0,0,0,0};
+  delay_ms(40);
   i2c_start();
-  i2c_write(TRIMPOT_READ_CMD);
+  ack_in=i2c_write(TRIMPOT_READ_CMD);
   for(x=0;x<4;x++) {
-      if(x==3) {
-	    nak=0;
+    if(x==3) {
+	    ack=0;
 	  } else {
-	    nak=1;
+	    ack=1;
 	  }
-      pot_val=i2c_read(nak);
+    pot_val=i2c_read(ack);
 	  pot_val=pot_val&0x3F;
-      printf(" Pot(%Lu)=%d",x,pot_val);
+    pval[x]=pot_val;
   }
   i2c_stop();
-  PROMPT_FLAG=1;
+  delay_ms(50);
+  if ( ack_in!=0 ) {
+    printf("\n\rI2C Error : No ACK from TRIMPOTS : %u",ack);
+  }
+  sprintf(LCD_str,"POT:%d %d %d %d",pval[0],pval[1],pval[2],pval[3]);
+  lcd_send(0,LCD_str); // COR/PTT on line 0
+  printf("\n\r%s",LCD_str);
+
 } // }}}
 
 void prompt(void) { // {{{
@@ -756,6 +787,7 @@ void initialize (void) { // {{{
   // C0 : Aux2 In
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
+//  port_b_pullups(PIN_B7|PIN_B6);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=60;
@@ -882,8 +914,8 @@ void increment(int incr) { // {{{
     value = *pot_ptr;
     *pot_ptr = value + incr;
     set_trimpot(CurrentTrimPot,*pot_ptr);
-//    printf ("\n\rRX_GAIN [Radio%u] [Pot%u] = %u\n\r",CurrentCorIndex,CurrentTrimPot,*pot_ptr);
   }
+  pot_values_to_lcd();
 } // }}}
 void romstrcpy(char *dest,rom char *src) { // {{{
   int c=0;
@@ -950,6 +982,8 @@ void update_aux_out(void) { // {{{
   char x;
   char AuxOp;
   char AuxArg;
+  char AuxIn_s[4]={'0','0','0',0};
+  char AuxOut_s[4]={'0','0','0',0};
   int1 out_bit;
 
   for(x=0;x<3;x++) {
@@ -958,13 +992,20 @@ void update_aux_out(void) { // {{{
     ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
     out_bit = (AuxOut[x])==0;
     output_bit(AUX_OUT_PIN[x],out_bit);
+    if(out_bit==0) {
+      AuxOut_s[x]='1';
+    }
     // Execute aux inputs {{{
     AuxOp = AuxInOp[x];
     AuxArg = AuxInArg[x];
-//printf("\n\rExecAuxInOp[%u]; Op:%u, Arg:%u",x,AuxOp,AuxArg);
+    if(input(AUX_IN_PIN[x])==1) {
+      AuxIn_s[x]='1';
+    }
     ExecAuxInOp(AuxOp,AuxArg,x);
     // }}}
   }
+  sprintf(LCD_str,"AuxI:%s  AuxO:%s",AuxIn_s,AuxOut_s);
+  lcd_send(3,LCD_str);
 } // }}}
 
 void send_morse_id (void) { // {{{
