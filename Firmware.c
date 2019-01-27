@@ -751,6 +751,7 @@ void initialize (void) { // {{{
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
   WPUB=0x00;
+  port_b_pullups(PIN_B7|PIN_B6);
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -787,7 +788,6 @@ void initialize (void) { // {{{
   // C0 : Aux2 In
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
-//  port_b_pullups(PIN_B7|PIN_B6);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=60;
@@ -801,6 +801,9 @@ void initialize (void) { // {{{
   MINUTE_FLAG=0;
   PROMPT_FLAG=1;
   TailChar=Tail;
+  AuxOut[0] = PO_AUX_OUT0;
+  AuxOut[1] = PO_AUX_OUT1;
+  AuxOut[2] = PO_AUX_OUT2;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
