@@ -431,7 +431,7 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
-	{&SiteID        ,50          , EEPROM},
+	{&SiteID        ,SITE_ID_VAL , EEPROM},
 	{&MorseDitLength ,1          , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},

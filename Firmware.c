@@ -107,6 +107,8 @@ void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
   int lcd_cmd;
+  rom char * cPtr;
+  char rname[REG_NAME_SIZE];
   switch(command) {
     case SET_REG:
       set_var();
@@ -115,6 +117,9 @@ void execute_command(void) { // {{{
       regPtr=RegMap[argument].reg_ptr;
       LastRegisterIndex = argument;
       LastRegisterIndexValid=1;
+      cPtr = &reg_name + (argument * REG_NAME_SIZE);
+  	  romstrcpy(rname,cPtr);
+      printf("\n\r[%02u] %s %u\n\r",argument,rname,*regPtr);
       break;
     case SAVE_SETTINGS:
       store_variables();
@@ -170,6 +175,7 @@ void process_sBuffer(void) { // {{{
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
 
+  lcd_send(2,sBuffer);
   tokenize_sBuffer();
 
   argument=-1;
@@ -887,6 +893,13 @@ void tokenize_sBuffer() { // {{{
   strcpy(smatch_reg,"-");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DECREMENT_REG;
+  } // }}}
+  // Check for "/ (Next CPOT)" command {{{
+  strcpy(smatch_reg,"n");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=SET_REG;
+    value = (CurrentTrimPot + 1)&0x03;
+    strcpy(argument_name,"CPOT");
   } // }}}
 } // }}}
 
