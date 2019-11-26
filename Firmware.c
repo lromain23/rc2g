@@ -117,9 +117,10 @@ void execute_command(void) { // {{{
       regPtr=RegMap[argument].reg_ptr;
       LastRegisterIndex = argument;
       LastRegisterIndexValid=1;
-      cPtr = &reg_name + (argument * REG_NAME_SIZE);
+      cPtr = &reg_name + ((unsigned long)argument * REG_NAME_SIZE);
   	  romstrcpy(rname,cPtr);
       printf("\n\r[%02u] %s %u\n\r",argument,rname,*regPtr);
+      prompt();
       break;
     case SAVE_SETTINGS:
       store_variables();
