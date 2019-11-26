@@ -1,8 +1,8 @@
 
-#define SITE_ID_VAL  	20	
+#define SITE_ID_VAL  	50
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
-#define ENABLE_DEFAULT 11
+#define ENABLE_DEFAULT 15
 
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('e')
@@ -28,3 +28,6 @@
 #define AUXINOP2 0
 #define AUXINARG2 0
 
+#define PO_AUX_OUT0 1
+#define PO_AUX_OUT1 1
+#define PO_AUX_OUT2 1

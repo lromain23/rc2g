@@ -107,6 +107,8 @@ void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
   int lcd_cmd;
+  rom char * cPtr;
+  char rname[REG_NAME_SIZE];
   switch(command) {
     case SET_REG:
       set_var();
@@ -115,6 +117,10 @@ void execute_command(void) { // {{{
       regPtr=RegMap[argument].reg_ptr;
       LastRegisterIndex = argument;
       LastRegisterIndexValid=1;
+      cPtr = &reg_name + ((unsigned long)argument * REG_NAME_SIZE);
+  	  romstrcpy(rname,cPtr);
+      printf("\n\r[%02u] %s %u\n\r",argument,rname,*regPtr);
+      prompt();
       break;
     case SAVE_SETTINGS:
       store_variables();
@@ -170,6 +176,7 @@ void process_sBuffer(void) { // {{{
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
 
+  lcd_send(2,sBuffer);
   tokenize_sBuffer();
 
   argument=-1;
@@ -751,6 +758,7 @@ void initialize (void) { // {{{
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
   WPUB=0x00;
+  port_b_pullups(PIN_B7|PIN_B6);
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -787,7 +795,6 @@ void initialize (void) { // {{{
   // C0 : Aux2 In
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
-//  port_b_pullups(PIN_B7|PIN_B6);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=60;
@@ -801,6 +808,9 @@ void initialize (void) { // {{{
   MINUTE_FLAG=0;
   PROMPT_FLAG=1;
   TailChar=Tail;
+  AuxOut[0] = PO_AUX_OUT0;
+  AuxOut[1] = PO_AUX_OUT1;
+  AuxOut[2] = PO_AUX_OUT2;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -884,6 +894,13 @@ void tokenize_sBuffer() { // {{{
   strcpy(smatch_reg,"-");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DECREMENT_REG;
+  } // }}}
+  // Check for "/ (Next CPOT)" command {{{
+  strcpy(smatch_reg,"n");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=SET_REG;
+    value = (CurrentTrimPot + 1)&0x03;
+    strcpy(argument_name,"CPOT");
   } // }}}
 } // }}}
 
@@ -1112,6 +1129,22 @@ void main (void) { // {{{
       PROMPT_FLAG=0;
 	  restart_wdt();
     }
+// Code for RC2G - V2
+//    if ( COR_IN != 0 ) {
+//      if ( input(BUTTON)==0 ) {
+//      // Button is pressed while incoming COR. 
+//        BUTTON_FLAG=1;
+//        output_bit(STATUS_LED,1);
+//     }
+//   } else {
+//     BUTTON_FLAG=0;
+//     output_bit(STATUS_LED,0);
+//   }
+//   if ( BUTTON_FLAG ) {
+//     // Sample Potentiometer on RB5/AN13
+//     // Enable output LED on RA6
+//     setup_adc_ports(ADJ_POT);
+//   }
   } // End of while(1) main loop
 } // }}}
 

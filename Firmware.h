@@ -248,6 +248,7 @@ int dtmf_read(int1 rs);
 void dtmf_write(int data,int1 rs);
 
 int1       COR_FLAG;
+int1       BUTTON_FLAG;
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
@@ -268,6 +269,9 @@ int1       PROMPT_FLAG;
 #define EEPROM   1
 #define RAM      0
 
+#define BUTTON   PIN_E3
+#define STATUS_LED PIN_A6
+#define ADJ_POT	 sAN13
 #define DTMF_D0  PIN_D0
 #define DTMF_D1  PIN_D1
 #define DTMF_D2  PIN_D2
@@ -431,7 +435,7 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
-	{&SiteID        ,50          , EEPROM},
+	{&SiteID        ,SITE_ID_VAL , EEPROM},
 	{&MorseDitLength ,1          , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},
