@@ -408,14 +408,12 @@ void process_dtmf(void) { // {{{
 } // }}}
 
 void process_cor (void) { // {{{
-  int cor_priority_tmp;
   int cor_mask,cor_index;
   int rx_priority;
   int cor_in;
   int do_update_ptt;
   int x;
 
-  cor_priority_tmp = 0;
   cor_mask=1;
   do_update_ptt=0;
   cor_in = COR_IN | (COR_EMUL&0x0F);
@@ -444,7 +442,9 @@ void process_cor (void) { // {{{
       // New COR is being captured.
       // Initialize TOT timer
       if ( rx_priority > CurrentCorPriority ) {
-        cor_priority_tmp = rx_priority;
+        if ( ! CurrentCorPriority ) {
+          CurrentCorPriority = rx_priority;
+        }
         cor_index=x+1;
         do_update_ptt=1;
         TOT_SecondCounter=PTT_TIMEOUT_SECS;
@@ -453,7 +453,7 @@ void process_cor (void) { // {{{
     cor_mask = cor_mask << 1;
   }
   if ( do_update_ptt ) {
-    printf("\n\r# COR Ports = %u; SW Emulated COR : %u",COR_IN,COR_EMUL);
+    printf("\n\r# (C:%u, P:%u) COR Ports = %u; SW Emulated COR : %u",cor_index,CurrentCorPriority,COR_IN,COR_EMUL);
     update_ptt(cor_index);
     PROMPT_FLAG=1;
   }
@@ -519,7 +519,7 @@ void status (void) { // {{{
       aux_in += 2<<y;
     }
   }
-  printf("\n\n\rCOR : %u (Emulated : %u); AuxIn = %u",COR_IN,COR_EMUL,aux_in);
+  printf("\n\n\rCOR : %u, PRI:%u (Emulated : %u); AuxIn = %u",COR_IN,CurrentCorPriority,COR_EMUL,aux_in);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
   pot_values_to_lcd();
   PROMPT_FLAG=1;
