@@ -3,7 +3,7 @@
 #fuses INTRC_IO
 #fuses NOPROTECT
 #fuses BROWNOUT
-#fuses MCLR
+#fuses NOMCLR
 #fuses NOCPD
 #fuses WDT // WDT controlled by sw
 #fuses NOPUT
@@ -43,10 +43,11 @@ void store_variables(void);
 void clear_dtmf_array(void);
 void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
+void update_aux_in(void);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
-unsigned int AuxIn[3];
+unsigned int AuxIn[3],AuxInSW[3];
 unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
@@ -94,12 +95,17 @@ unsigned int1 sBufferFlag;
 // Auxiliary Output Operators
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
+#define AUX_OUT_FOLLOW_AUX_IN 0x02
+// Follow COR args:
 #define AUX_OUT_FOLLOW_COR0 0x01
 #define AUX_OUT_FOLLOW_COR1 0x02
 #define AUX_OUT_FOLLOW_COR2 0x04
 #define AUX_OUT_FOLLOW_COR3 0x08
-// Follow AUX_IN
-#define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define AUX_OUT_FOLLOW_COR_INVERT0 0x10
+#define AUX_OUT_FOLLOW_COR_INVERT1 0x20
+#define AUX_OUT_FOLLOW_COR_INVERT2 0x40
+#define AUX_OUT_FOLLOW_COR_INVERT3 0x80
+// Follow AUX_IN args:
 #define AUX_OUT_FOLLOW_AUX_IN0 0x01
 #define AUX_OUT_FOLLOW_AUX_IN0_INV 0x11
 #define AUX_OUT_FOLLOW_AUX_IN1 0x02
@@ -122,6 +128,13 @@ unsigned int1 sBufferFlag;
 #define AUXI_TAIL_WHEN_LO 0x02
 #define AUXI_TAIL_WHEN_HI 0x03
 #define AUXI_TAIL_CHAR MCHAR('s')
+
+#define AUXI_EMULATE_COR 0x04
+#define AUXI_EMULATE_COR_ACTIVE_LO 0x10
+#define AUXI_EMULATE_COR0 0x01
+#define AUXI_EMULATE_COR1 0x02
+#define AUXI_EMULATE_COR2 0x04
+#define AUXI_EMULATE_COR3 0x08
 
 
 // Digital TrimPot
@@ -252,6 +265,7 @@ int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
 int1       COR_DROP_FLAG;
+int1       AUX_IN_FLAG;
 int        SecondCounter,MinuteCounter;
 unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
@@ -423,9 +437,9 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,0           , EEPROM},
 	{&AuxOut[1]     ,0           , EEPROM},
 	{&AuxOut[2]     ,0           , EEPROM},
-	{&RXPriority[0] ,4           , EEPROM},
-	{&RXPriority[1] ,6           , EEPROM},
-	{&RXPriority[2] ,6           , EEPROM},
+	{&RXPriority[0] ,1           , EEPROM},
+	{&RXPriority[1] ,3           , EEPROM},
+	{&RXPriority[2] ,3           , EEPROM},
 	{&RXPriority[3] ,2           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},

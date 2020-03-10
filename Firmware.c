@@ -33,7 +33,6 @@ void rs232_int (void) { // {{{
 void RB0_INT (void) { // {{{
   int value,dtmf_status;
   int LAST_COR_IN;
-
   //if(interrupt_active(INT_RB0|INT_RB1|INT_RB2|INT_RB3)) {
   if(IOCBF&0x0F) { // Check for interrupts on RB[3:0] only
     LAST_COR_IN=COR_IN;
@@ -68,6 +67,10 @@ void RB0_INT (void) { // {{{
     }
 	clear_interrupt(INT_RB4_H2L);
   }
+  if(interrupt_active(INT_RB6|INT_RB7)) {
+    AUX_IN_FLAG=1;
+    clear_interrupt(INT_RB6|INT_RB7);
+  }
 } // }}}
 
 #INT_TIMER0
@@ -77,6 +80,7 @@ void int_rtcc(void) { // {{{
   } else {
     COR_FLAG=1;
     SECOND_FLAG=1;
+    AUX_IN_FLAG=1;
     rtcc_cnt=30;
   }
   if (aux_timer ) {
@@ -84,6 +88,7 @@ void int_rtcc(void) { // {{{
   }
 } // }}}
 
+int1 warn_no_lcd = 1;
 void lcd_send(int line,char * s) { // {{{
   int lcd_cmd;
   int1 ack;
@@ -93,7 +98,12 @@ void lcd_send(int line,char * s) { // {{{
   i2c_start();
   ack=i2c_write(lcd_cmd);
   if ( ack!=0 ) {
-    printf("\n\rI2C ERROR : No ACK from LCD : %u",ack);
+    if ( warn_no_lcd ) {
+      printf("\n\rI2C ERROR : No ACK from LCD : %u",ack);
+      warn_no_lcd = 0;
+    }
+  } else {
+    warn_no_lcd = 1;
   }
   while(*s) {
     i2c_write(*s++);
@@ -221,11 +231,11 @@ void set_trimpot(pot,value) { // {{{
   i2c_start();
   ack=i2c_write(TRIMPOT_WRITE_CMD);
   if ( ack != 0) {
-    printf("\n\rI2C Error : No ACK from trimpot : %u",ack);
+    printf("\n\rI2C :: No ACK from trimpot : %u",ack);
   }
   i2c_write(tx_value);
   i2c_stop();  
-  printf("\n\rSetting Pot(%u) to %u",pot,value);
+  printf("\n\r Pot(%u) <== %u",pot,value);
 
 } // }}}
 
@@ -235,7 +245,7 @@ void morse (int c) { // {{{
 
 	mc = cMorseChar[c]; 
 	
-  printf("\n\rSending morse : %u",c);
+  printf("\n\rMorse : %u",c);
   PROMPT_FLAG=1;
 	for(x=0;x<4;x++) {
 		switch(mc & 0xc0) { // Check two MSB's
@@ -453,7 +463,7 @@ void process_cor (void) { // {{{
     cor_mask = cor_mask << 1;
   }
   if ( do_update_ptt ) {
-    printf("\n\r# (C:%u, P:%u) COR Ports = %u; SW Emulated COR : %u",cor_index,CurrentCorPriority,COR_IN,COR_EMUL);
+//    printf("\n\r# (C:%u, P:%u) COR %u (|%u)",cor_index,CurrentCorPriority,COR_IN,COR_EMUL);
     update_ptt(cor_index);
     PROMPT_FLAG=1;
   }
@@ -515,7 +525,7 @@ void status (void) { // {{{
     restart_wdt();
   }
   for(y=0;y<3;y++) {
-    if(input(AUX_IN_PIN[y])==1) {
+    if(AuxInSW[y]==1) {
       aux_in += 2<<y;
     }
   }
@@ -758,7 +768,10 @@ void initialize (void) { // {{{
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
   WPUB=0x00;
-  port_b_pullups(PIN_B7|PIN_B6);
+  // AuxIn pins : B6, B7, C0
+  port_b_pullups(AUX_IN0|AUX_IN1);
+  // No pull-ups are available on port c
+  //port_c_pullups(AUX_IN2);
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -772,7 +785,7 @@ void initialize (void) { // {{{
   set_tris_d(0x00);
   set_tris_e(0xF8);
   enable_interrupts(INT_RDA);
-  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
+  enable_interrupts(INT_RB0|INT_RB1|INT_RB2|INT_RB3|INT_RB6|INT_RB7);
   enable_interrupts(INT_RB4_H2L);
   enable_interrupts(GLOBAL);
   output_bit(DTMF_CS ,0);
@@ -811,6 +824,10 @@ void initialize (void) { // {{{
   AuxOut[0] = PO_AUX_OUT0;
   AuxOut[1] = PO_AUX_OUT1;
   AuxOut[2] = PO_AUX_OUT2;
+  AuxInSW[0] = 0;
+  AuxInSW[1] = 0;
+  AuxInSW[2] = 0;
+  AUX_IN_FLAG = 0;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -820,7 +837,7 @@ void tokenize_sBuffer() { // {{{
   char *sptr;
 
   // Get verb {{{
-  strcpy(match_tok," ;\r");
+  strcpy(match_tok," ,;\r");
   sptr=strtok(sBuffer,match_tok);
   if (sptr!=0) {;
     strcpy(verb,sptr);
@@ -944,28 +961,30 @@ void romstrcpy(char *dest,rom char *src) { // {{{
  
 void ExecAuxOutOp(int op,int arg,int ID) { // {{{
   int cor_in_local;
-  int larg,uarg; // Lower and upper nibbles
-  int1 in_bit;
-  in_bit = input(AUX_IN_PIN[ID]);
+  char larg,uarg; // Lower and upper nibbles
   larg = arg & 0x0F;
   uarg = (arg & 0xF0) >> 4;
   cor_in_local = COR_IN | (COR_EMUL&0x0F);
   switch(op) {
     case AUX_OUT_FOLLOW_COR: 
-      AuxOut[ID] = (cor_in_local & arg) != 0;
+      // Invert AuxIn value if argument 1 is set
+      AuxOut[ID] = ((COR_IN ^ uarg) & larg) != 0;
     break;
     case AUX_OUT_FOLLOW_AUX_IN:
-      // Lower argument (larg) enables the comparison
-      // Upper argument (uarg) inverts the output
-      AuxOut[ID] = ((in_bit & larg) ^ uarg)!=0;
+      // Lower argument (larg) enables the comparison (bitwise enable)
+      // Upper argument (uarg) inverts the output (bitwise invert selection)
+      AuxOut[ID] = ((AuxInSW & larg) ^ uarg)!=0;
     break;
   }
 } // }}}
 
 void ExecAuxInOp(int op,int arg,int ID) { // {{{
   int1 in_bit;
-  in_bit = input(AUX_IN_PIN[ID])==1;
-//printf("\n\r  In:%u",in_bit);
+  int1 tmp_bit;
+  in_bit = AuxInSW[ID]!=0;
+  char larg,uarg; // Lower and upper nibbles
+  larg = arg & 0x0F;
+  uarg = (arg & 0xF0) >> 4;
   switch(op) {
 // Must add a method to reset the Enable_Mask to 0x0F when
 // the operator is not AUXI_ENABLE
@@ -977,7 +996,7 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
       }
       break;
     case AUXI_TAIL_WHEN_HI:
-      if ( in_bit==1 ) {
+      if ( in_bit ) {
         COR_DROP_FLAG=1;
         TailChar=arg;
       } else {
@@ -992,6 +1011,25 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
         TailChar=0;
       }
     break;
+    case AUXI_EMULATE_COR:
+      if ( (arg & AUXI_EMULATE_COR_ACTIVE_LO) != 0 ) {
+        tmp_bit = ~in_bit;
+      } else {
+        tmp_bit = in_bit;
+      }
+      if ( tmp_bit ) {
+        COR_EMUL |= larg;
+      } else {
+        COR_EMUL &= ~larg;
+      }
+    break;
+  }
+} // }}}
+
+void update_aux_in(void) { // {{{
+  int x;
+  for(x=0;x<3;x++) {
+    AuxInSW[x] = (input(AUX_IN_PIN[x])!=0) || (AuxIn[x]!=0);
   }
 } // }}}
 
@@ -1015,7 +1053,7 @@ void update_aux_out(void) { // {{{
     // Execute aux inputs {{{
     AuxOp = AuxInOp[x];
     AuxArg = AuxInArg[x];
-    if(input(AUX_IN_PIN[x])==1) {
+    if(AuxInSW[x]==1) {
       AuxIn_s[x]='1';
     }
     ExecAuxInOp(AuxOp,AuxArg,x);
@@ -1059,6 +1097,10 @@ void main (void) { // {{{
     }
     // Process RS232 Serial Buffer Flag }}} 
 	restart_wdt();
+    if ( AUX_IN_FLAG ) {
+      update_aux_in();
+      AUX_IN_FLAG=0;
+    }
     if ( SECOND_FLAG ) {
       update_aux_out();
       // Time Out PTT {{{
