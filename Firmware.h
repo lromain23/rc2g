@@ -59,6 +59,7 @@ unsigned int Enable,Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID;
 unsigned int Tail;
+unsigned int TOT_Min;
 unsigned int COR_EMUL;
 unsigned int MorseDitLength;
 unsigned int TailChar;
@@ -276,7 +277,7 @@ int1       PROMPT_FLAG;
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
 // DEFAULT -- Initializes variables using values in ROM
-#define PTT_TIMEOUT_SECS 60*5 // 5 mins timeout
+#define PTT_TIMEOUT_SECS 60
 #define USE_EEPROM_VARS 1
 #define USE_DEFAULT_VARS 0
 #define EEPROM   1
@@ -346,7 +347,15 @@ int1       PROMPT_FLAG;
 
 //rom char * rom strPtr=COR_IN_NAME;
 
-#define DEFAULT_GAIN 32
+#ifndef GAIN
+  #define DEFAULT_GAIN 32
+#endif
+#ifndef POLARITY_DEF_VAL
+  #define POLARITY_DEF_VAL 0x0F
+#endif
+#ifndef ENABLE_DEFAULT
+  #define ENABLE_DEFAULT 0x0F
+#endif
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
@@ -406,8 +415,9 @@ char const reg_name[][REG_NAME_SIZE]={
     {"XIA2"}, // 50 
     {"XIA3"}, // 51
     {"TAIL"}, // 52
-    {"COR"},  // 53
-    {"CPOT"}  // 54
+    {"TOT"},  // 53
+    {"COR"},  // 54
+    {"CPOT"}  // 55
 };
 
 #include "SITE_XX.h"
@@ -466,6 +476,7 @@ struct sRegMap_t const RegMap[]={
 	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
 	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
   {&Tail          ,TAIL_CHAR   , EEPROM},
+  {&TOT_Min       ,TOT_MIN     , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };

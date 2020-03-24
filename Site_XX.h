@@ -3,6 +3,8 @@
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
+#define TOT_MIN 5
+#define DEFAULT_GAIN 22
 
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('e')

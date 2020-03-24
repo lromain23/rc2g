@@ -37,7 +37,7 @@ void RB0_INT (void) { // {{{
   if(IOCBF&0x0F) { // Check for interrupts on RB[3:0] only
     LAST_COR_IN=COR_IN;
     COR_IN=(input_b() ^ Polarity)&0x0F;
-    if ( LAST_COR_IN != COR_IN ) {
+    if ( (LAST_COR_IN != COR_IN) ) {
       COR_FLAG = 1;
     }
     clear_interrupt(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
@@ -75,10 +75,16 @@ void RB0_INT (void) { // {{{
 
 #INT_TIMER0
 void int_rtcc(void) { // {{{
+//  int LAST_COR_IN;
   if ( rtcc_cnt ) {
     rtcc_cnt--;
   } else {
+//    LAST_COR_IN=COR_IN;
+    COR_IN=(input_b() ^ Polarity)&0x0F;
     COR_FLAG=1;
+//    if ( (LAST_COR_IN != COR_IN) || COR_EMUL) {
+//      COR_FLAG=1;
+//    }
     SECOND_FLAG=1;
     AUX_IN_FLAG=1;
     rtcc_cnt=30;
@@ -231,7 +237,7 @@ void set_trimpot(pot,value) { // {{{
   i2c_start();
   ack=i2c_write(TRIMPOT_WRITE_CMD);
   if ( ack != 0) {
-    printf("\n\rI2C :: No ACK from trimpot : %u",ack);
+    printf("\n\rI2C : No ACK from trimpot : %u",ack);
   }
   i2c_write(tx_value);
   i2c_stop();  
@@ -457,13 +463,12 @@ void process_cor (void) { // {{{
         }
         cor_index=x+1;
         do_update_ptt=1;
-        TOT_SecondCounter=PTT_TIMEOUT_SECS;
+        TOT_SecondCounter= 60 * TOT_Min;
       }
     }
     cor_mask = cor_mask << 1;
   }
   if ( do_update_ptt ) {
-//    printf("\n\r# (C:%u, P:%u) COR %u (|%u)",cor_index,CurrentCorPriority,COR_IN,COR_EMUL);
     update_ptt(cor_index);
     PROMPT_FLAG=1;
   }
@@ -1104,7 +1109,7 @@ void main (void) { // {{{
     if ( SECOND_FLAG ) {
       update_aux_out();
       // Time Out PTT {{{
-      if ( TOT_SecondCounter ) {
+      if ( TOT_SecondCounter || TOT_Min == 0) {
         TOT_SecondCounter--;
       } else if ( COR_IN != 0x00 ) {
         update_ptt(0);
