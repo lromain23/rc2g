@@ -150,11 +150,13 @@ void execute_command(void) { // {{{
       init_variables(init_src);
       break;
     case INCREMENT_REG:
-      increment(1);
+      CurrentTrimPot = argument & 0x03;
+      increment(value);
       PROMPT_FLAG=1;
       break;
     case DECREMENT_REG:
-      increment(-1);
+      CurrentTrimPot = argument & 0x03;
+      increment(-1*value);
       PROMPT_FLAG=1;
       break;
     case STATUS:
@@ -217,6 +219,10 @@ void process_sBuffer(void) { // {{{
     if(stricmp(argument_name,rname)==0) {
       value=USE_DEFAULT_VARS;
     }
+  }
+  if ( command == INCREMENT_REG || command == DECREMENT_REG ) {
+    value = 1;
+    argument = CurrentTrimPot;
   }
   execute_command();
 } // }}}
@@ -307,7 +313,6 @@ void update_ptt(int cor) { // {{{
     }
   }
 
-
   mask=1;
   for(x=0;x<4;x++) {
     if ( !cor ) {
@@ -391,6 +396,26 @@ void process_dtmf(void) { // {{{
   // Structure:
   // [SID1][SID0][CMD1][CMD0][ARG1][ARG0][Valx][Valy][Valz]
   //   0     1     2     3     4     5     6     7     8
+  // Commands:
+  // 02 : Set register value
+  // 03 : get register value
+  // 04 : Save settings to EEPROM
+  // 05 : Restore settings from EEPROM
+  // 06 : Increment Current Pot
+  // 07 : Decrement Current Pot
+  // 08 : Status
+  // 09 : Reboot
+  // 10 : DTMF send
+  // 11 : Morse send
+  // 12 : Send to I2C
+  // 
+  // Ex: (# = 12)
+  // Reboot                 : 52 09 00 #
+  // Set AuxOut[2] (22) to 0: 52 02 22 0 #
+  // Set AuxOut[2] (22) to 1: 52 02 22 1 #
+  // Change to pot 4        : 52 02 55 3 #
+  // Increment POT 01 by 3  : 52 06 01 3 #
+  // Decrement POT 03 by 4  : 52 07 03 4 #
   value = 0;
   command=0;
   if ( ValidKeyRange(0,5)) {
@@ -544,6 +569,7 @@ void pot_values_to_lcd (void) { // {{{
   char x;
   int8 pot_val;
   int1 ack,ack_in;
+  unsigned c[4]={' ',' ',' ',' '};
   unsigned pval[4]={0,0,0,0};
   delay_ms(40);
   i2c_start();
@@ -557,13 +583,18 @@ void pot_values_to_lcd (void) { // {{{
     pot_val=i2c_read(ack);
 	  pot_val=pot_val&0x3F;
     pval[x]=pot_val;
+    if ( (0x03 & CurrentTrimPot) == x ) {
+      c[x] = '*';
+    }
   }
   i2c_stop();
   delay_ms(50);
   if ( ack_in!=0 ) {
     printf("\n\rI2C Error : No ACK from TRIMPOTS : %u",ack);
   }
-  sprintf(LCD_str,"POT:%d %d %d %d",pval[0],pval[1],pval[2],pval[3]);
+  // 0x7e character is right arrow
+  // 0xc7 on LCD displays with standard characters
+  sprintf(LCD_str,"POT:%c%d %c%d %c%d %c%d",c[0],pval[0],c[1],pval[1],c[2],pval[2],c[3],pval[3]);
   lcd_send(0,LCD_str); // COR/PTT on line 0
   printf("\n\r%s",LCD_str);
 
@@ -893,7 +924,7 @@ void tokenize_sBuffer() { // {{{
     command=REBOOT;
   } // }}}
   // Check for "dtmf" command {{{
-  strcpy(smatch_reg,"dtmf");  
+  strcpy(smatch_reg,"d");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DTMF_SEND;
   } // }}}
@@ -917,7 +948,7 @@ void tokenize_sBuffer() { // {{{
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DECREMENT_REG;
   } // }}}
-  // Check for "/ (Next CPOT)" command {{{
+  // Check for "n (Next CPOT)" command {{{
   strcpy(smatch_reg,"n");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=SET_REG;
@@ -938,7 +969,7 @@ void set_var (void) { // {{{
     LastRegisterIndex = argument;
     LastRegisterIndexValid=1;
     printf ("\n\rSetting %s(%u) to %u",argument_name,argument,value);
-    if ( pObj >= &RX_GAIN[0][0] && pObj <= &RX_GAIN[3][3] ) {
+    if ( (pObj >= &RX_GAIN[0][0] && pObj <= &RX_GAIN[3][3]) || pObj == &CurrentTrimPot ) {
       increment(0); // Increment is done in this function. Only update trim pot.
     }
     PROMPT_FLAG=1;
@@ -948,11 +979,13 @@ void set_var (void) { // {{{
 void increment(int incr) { // {{{
   int *pot_ptr;
   int value;
+  char CPotPtr;
+  CPotPtr=CurrentTrimPot & 0x03;
   if ( CurrentCorIndex ) {
-    pot_ptr=&RX_GAIN[CurrentCorIndex-1][CurrentTrimPot];
+    pot_ptr=&RX_GAIN[CurrentCorIndex-1][CPotPtr];
     value = *pot_ptr;
     *pot_ptr = value + incr;
-    set_trimpot(CurrentTrimPot,*pot_ptr);
+    set_trimpot(CPotPtr,*pot_ptr);
   }
   pot_values_to_lcd();
 } // }}}
@@ -973,6 +1006,7 @@ void ExecAuxOutOp(int op,int arg,int ID) { // {{{
   switch(op) {
     case AUX_OUT_FOLLOW_COR: 
       // Invert AuxIn value if argument 1 is set
+      // Use COR_IN from HW ports here
       AuxOut[ID] = ((COR_IN ^ uarg) & larg) != 0;
     break;
     case AUX_OUT_FOLLOW_AUX_IN:

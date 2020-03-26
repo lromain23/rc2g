@@ -200,7 +200,7 @@ typedef struct {
 } sCOR;
 
 #define REG_NAME_SIZE 6
-unsigned int command,argument,value;
+char command,argument,value;
 #LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
 char LCD_str[21];
@@ -447,10 +447,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,0           , EEPROM},
 	{&AuxOut[1]     ,0           , EEPROM},
 	{&AuxOut[2]     ,0           , EEPROM},
-	{&RXPriority[0] ,1           , EEPROM},
-	{&RXPriority[1] ,3           , EEPROM},
-	{&RXPriority[2] ,3           , EEPROM},
-	{&RXPriority[3] ,2           , EEPROM},
+	{&RXPriority[0] ,2           , EEPROM},
+	{&RXPriority[1] ,6           , EEPROM},
+	{&RXPriority[2] ,6           , EEPROM},
+	{&RXPriority[3] ,4           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
