@@ -28,6 +28,7 @@
 #use fast_io (e)
 
 //function headers
+char str_to_decimal(char *str);
 void send_tail(void);
 void morse(char);
 void dit(void);
@@ -44,6 +45,7 @@ void clear_dtmf_array(void);
 void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
 void update_aux_in(void);
+void update_aux_out(void);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
@@ -57,11 +59,10 @@ unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int COR_IN;
 unsigned int Enable,Enable_Mask;
 unsigned int Polarity;
-unsigned int SiteID;
+unsigned int SiteID,TXSiteID;
 unsigned int Tail;
 unsigned int TOT_Min;
 unsigned int COR_EMUL;
-unsigned int MorseDitLength;
 unsigned int TailChar;
 // Variables accessed using linear addressing }}}
 
@@ -88,8 +89,15 @@ unsigned int1 sBufferFlag;
 #define INCREMENT_REG 6
 #define DECREMENT_REG 7
 #define STATUS    8
-#define REBOOT    9
-#define DTMF_SEND 10
+#define ADMIN     9
+#define ADMIN_TIMEOUT 60
+char admin_timer;
+// Admin args:
+#define IDLE          0
+#define ENTER_ADMIN   1
+#define REBOOT        2
+#define SEND_MORSE_ID 3
+//#define DTMF_SEND_OLD 10
 #define MORSE_SEND 11
 #define I2C_SEND 12
 
@@ -158,7 +166,8 @@ unsigned long aux_timer;
 #define AUX_TIMER_100ms 3
 #define AUX_TIMER_60ms 2
 #define AUX_TIMER_30ms 1
-const int MorseLen[4]={AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms,AUX_TIMER_300ms};
+#define MorseDitLength 1
+const int MorseLen[4]={AUX_TIMER_30ms,AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms};
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -170,13 +179,13 @@ const int MorseLen[4]={AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms,AUX_TIMER_
 #define d7 0x07
 #define d8 0x08
 #define d9 0x09
-#define d0 0x0a
-#define ds 0x0b
-#define dp 0x0c
-#define da 0x0d
-#define db 0x0e
-#define dc 0x0f
-#define dd 0x00
+#define d0 0x0a // 0  (0)
+#define ds 0x0b // 11 (*)
+#define dp 0x0c // 12 (#)
+#define da 0x0d // 13 (A)
+#define db 0x0e // 14 (B)
+#define dc 0x0f // 15 (C)
+#define dd 0x00 // 10 (D)
 // }}}
 
 // sDTMF character structure 
@@ -203,7 +212,8 @@ typedef struct {
 char command,argument,value;
 #LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
-char LCD_str[21];
+#define LCD_STR_SIZE 21
+char LCD_str[LCD_STR_SIZE];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
 // It is used by the INCR or DECR commands
@@ -260,6 +270,9 @@ typedef struct sRegMap_t {
 
 int dtmf_read(int1 rs);
 void dtmf_write(int data,int1 rs);
+int1 in_admin_mode(void);
+void set_admin_mode(int1 enable);
+void send_morse_id(void);
 
 int1       COR_FLAG;
 int1       SECOND_FLAG;
@@ -273,6 +286,7 @@ int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
 int1       PROMPT_FLAG;
+int1       AdminMode;
 
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
@@ -395,7 +409,7 @@ char const reg_name[][REG_NAME_SIZE]={
 	{"R3PTT"},  // 30
 	{"R4PTT"},  // 31
     {"SID"},  // 32
-    {"MRSL"}, // 33
+    {"TXID"}, // 33
     {"MRS1"}, // 34
     {"MRS2"}, // 35
     {"MRS3"}, // 36
@@ -456,7 +470,7 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
 	{&SiteID        ,SITE_ID_VAL , EEPROM},
-	{&MorseDitLength ,1          , EEPROM},
+	{&TXSiteID      ,0x12         , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},
   {&Morse[2]      ,2           , EEPROM},

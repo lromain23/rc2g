@@ -42,16 +42,19 @@ file_002=no
 file_003=yes
 file_004=yes
 [FILE_INFO]
-file_000=Firmware.c
+file_000=C:\Users\Luc\Projects\RC2G - Buckingham\Firmware.c
 file_001=Firmware.h
 file_002=Site_XX.h
-file_003=Firmware.SYM
-file_004=Firmware.TRE
+file_003=C:\Users\Luc\Projects\RC2G - Buckingham\Firmware.SYM
+file_004=C:\Users\Luc\Projects\RC2G - Buckingham\Firmware.TRE
 [SUITE_INFO]
 suite_guid={BA86BF99-4C07-4CE2-A9E7-C2A337910996}
 suite_state=
 [TOOL_SETTINGS]
-TS{1BC4CBE6-8517-4656-ADCE-144170246122}=+DF +LN +T +A +M +Z +Y=9 +EA
+TS{1BC4CBE6-8517-4656-ADCE-144170246122}=+LN I+="$(INCDIR)" +T +A +M -Z +Y=9 +EA
+TS{1BC4CBE6-8517-4656-ADCE-144170246122}000=+DF +LN I+="$(INCDIR)" +T +A +M -Z +Y=9 +EA
+[ACTIVE_FILE_SETTINGS]
+TS{1BC4CBE6-8517-4656-ADCE-144170246122}000_active=yes
 [INSTRUMENTED_TRACE]
 enable=0
 transport=0
