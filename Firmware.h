@@ -1,9 +1,10 @@
 #include <16F1937.h>
 
+#device ADC=8;
 #fuses INTRC_IO
 #fuses NOPROTECT
 #fuses BROWNOUT
-#fuses MCLR
+#fuses NOMCLR
 #fuses NOCPD
 #fuses WDT // WDT controlled by sw
 #fuses NOPUT
@@ -17,18 +18,26 @@
 #include <string.h>
 #define MCHAR(c) c-'a'+10
 
+#define MIN_COUNTER 29
+#define SEC_COUNTER 59
 #define TAIL_CHAR 0
+#define BUTTON_STATES
+#define POT_MAX 63
 
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
+//#use fast_io (a)
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
 #use fast_io (e)
 
+
 //function headers
+char str_to_decimal(char *str);
 void send_tail(void);
+void status_led(void);
 void morse(char);
 void dit(void);
 void dah(void);
@@ -43,10 +52,12 @@ void store_variables(void);
 void clear_dtmf_array(void);
 void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
+void update_aux_in(void);
+void update_aux_out(void);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
-unsigned int AuxIn[3];
+unsigned int AuxIn[3],AuxInSW[3];
 unsigned int AuxOut[3];
 unsigned int RXPriority[4];
 unsigned int RX_PTT[4];
@@ -56,11 +67,12 @@ unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int COR_IN;
 unsigned int Enable,Enable_Mask;
 unsigned int Polarity;
-unsigned int SiteID;
+unsigned int SiteID,TXSiteID;
 unsigned int Tail;
+unsigned int TOT_Min;
 unsigned int COR_EMUL;
-unsigned int MorseDitLength;
 unsigned int TailChar;
+unsigned int ConfirmChar;
 // Variables accessed using linear addressing }}}
 
 // COR variables {{{
@@ -86,20 +98,33 @@ unsigned int1 sBufferFlag;
 #define INCREMENT_REG 6
 #define DECREMENT_REG 7
 #define STATUS    8
-#define REBOOT    9
-#define DTMF_SEND 10
+#define ADMIN     9
+#define ADMIN_TIMEOUT 240
+char admin_timer;
+// Admin args:
+#define DEBOUNCE_COUNT 8
+#define IDLE          0
+#define ENTER_ADMIN   1
+#define REBOOT        2
+#define SEND_MORSE_ID 3
+//#define DTMF_SEND_OLD 10
 #define MORSE_SEND 11
 #define I2C_SEND 12
 
 // Auxiliary Output Operators
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
+#define AUX_OUT_FOLLOW_AUX_IN 0x02
+// Follow COR args:
 #define AUX_OUT_FOLLOW_COR0 0x01
 #define AUX_OUT_FOLLOW_COR1 0x02
 #define AUX_OUT_FOLLOW_COR2 0x04
 #define AUX_OUT_FOLLOW_COR3 0x08
-// Follow AUX_IN
-#define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define AUX_OUT_FOLLOW_COR_INVERT0 0x10
+#define AUX_OUT_FOLLOW_COR_INVERT1 0x20
+#define AUX_OUT_FOLLOW_COR_INVERT2 0x40
+#define AUX_OUT_FOLLOW_COR_INVERT3 0x80
+// Follow AUX_IN args:
 #define AUX_OUT_FOLLOW_AUX_IN0 0x01
 #define AUX_OUT_FOLLOW_AUX_IN0_INV 0x11
 #define AUX_OUT_FOLLOW_AUX_IN1 0x02
@@ -123,6 +148,13 @@ unsigned int1 sBufferFlag;
 #define AUXI_TAIL_WHEN_HI 0x03
 #define AUXI_TAIL_CHAR MCHAR('s')
 
+#define AUXI_EMULATE_COR 0x04
+#define AUXI_EMULATE_COR_ACTIVE_LO 0x10
+#define AUXI_EMULATE_COR0 0x01
+#define AUXI_EMULATE_COR1 0x02
+#define AUXI_EMULATE_COR2 0x04
+#define AUXI_EMULATE_COR3 0x08
+
 
 // Digital TrimPot
 //
@@ -144,7 +176,8 @@ unsigned long aux_timer;
 #define AUX_TIMER_100ms 3
 #define AUX_TIMER_60ms 2
 #define AUX_TIMER_30ms 1
-const int MorseLen[4]={AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms,AUX_TIMER_300ms};
+#define MorseDitLength 1
+const int MorseLen[4]={AUX_TIMER_30ms,AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms};
 
 // DTMF character -- MT8888 maps {{{
 #define d1 0x01
@@ -156,13 +189,13 @@ const int MorseLen[4]={AUX_TIMER_60ms,AUX_TIMER_100ms,AUX_TIMER_200ms,AUX_TIMER_
 #define d7 0x07
 #define d8 0x08
 #define d9 0x09
-#define d0 0x0a
-#define ds 0x0b
-#define dp 0x0c
-#define da 0x0d
-#define db 0x0e
-#define dc 0x0f
-#define dd 0x00
+#define d0 0x0a // 0  (0)
+#define ds 0x0b // 11 (*)
+#define dp 0x0c // 12 (#)
+#define da 0x0d // 13 (A)
+#define db 0x0e // 14 (B)
+#define dc 0x0f // 15 (C)
+#define dd 0x00 // 10 (D)
 // }}}
 
 // sDTMF character structure 
@@ -186,10 +219,11 @@ typedef struct {
 } sCOR;
 
 #define REG_NAME_SIZE 6
-unsigned int command,argument,value;
+char command,argument,value;
 #LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
-char LCD_str[21];
+#define LCD_STR_SIZE 21
+char LCD_str[LCD_STR_SIZE];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
 // It is used by the INCR or DECR commands
@@ -198,6 +232,7 @@ unsigned int  LastRegisterIndexValid;
 
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
+#define MORSE_CHAR_ARRAY_LENGTH 37
 unsigned int rom cMorseChar[] = {
 	0b10101010, // 0 (dah dah dah dah dah)	0
 	0b01101010, // 1 (dit dah dah dah dah)	1
@@ -234,7 +269,8 @@ unsigned int rom cMorseChar[] = {
 	0b01101000, // w (dit dah dah)		32
 	0b10010110, // x (dah dit dit dah)	33
 	0b10011010, // y (dah dit dah dah)	34
-	0b10100101 // z (dah dah dit dit)	35
+	0b10100101, // z (dah dah dit dit)	35
+	0b00000000  // - (silence)	36
 }; // }}}
 
 typedef struct sRegMap_t { 
@@ -246,31 +282,43 @@ typedef struct sRegMap_t {
 
 int dtmf_read(int1 rs);
 void dtmf_write(int data,int1 rs);
+int1 in_admin_mode(void);
+void set_admin_mode(int1 enable);
+void send_morse_id(void);
 
+int1 ENTER_PRESSED;
+int1 SELECT_PRESSED;
+int  adj_value_a,adj_value_b;
+char button_state;
 int1       COR_FLAG;
-int1       BUTTON_FLAG;
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
 int1       COR_DROP_FLAG;
+int1       AUX_IN_FLAG;
 int        SecondCounter,MinuteCounter;
+int1       STATUS_LED;
 unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
 int1       PROMPT_FLAG;
+int1       AdminMode;
+int1       rs232_mode;
 
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
 // DEFAULT -- Initializes variables using values in ROM
-#define PTT_TIMEOUT_SECS 60*5 // 5 mins timeout
+#define PTT_TIMEOUT_SECS 60
 #define USE_EEPROM_VARS 1
 #define USE_DEFAULT_VARS 0
 #define EEPROM   1
 #define RAM      0
 
-#define BUTTON   PIN_E3
-#define STATUS_LED PIN_A6
+#define ENTER_BUTTON   PIN_A7
+#define SELECT_BUTTON   PIN_E3
+#define STATUS_LED_PIN PIN_A6
+// RB
 #define ADJ_POT	 sAN13
 #define DTMF_D0  PIN_D0
 #define DTMF_D1  PIN_D1
@@ -336,7 +384,15 @@ int1       PROMPT_FLAG;
 
 //rom char * rom strPtr=COR_IN_NAME;
 
-#define DEFAULT_GAIN 32
+#ifndef GAIN
+  #define DEFAULT_GAIN 32
+#endif
+#ifndef POLARITY_DEF_VAL
+  #define POLARITY_DEF_VAL 0x0F
+#endif
+#ifndef ENABLE_DEFAULT
+  #define ENABLE_DEFAULT 0x0F
+#endif
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
@@ -376,7 +432,7 @@ char const reg_name[][REG_NAME_SIZE]={
 	{"R3PTT"},  // 30
 	{"R4PTT"},  // 31
     {"SID"},  // 32
-    {"MRSL"}, // 33
+    {"TXID"}, // 33
     {"MRS1"}, // 34
     {"MRS2"}, // 35
     {"MRS3"}, // 36
@@ -396,8 +452,9 @@ char const reg_name[][REG_NAME_SIZE]={
     {"XIA2"}, // 50 
     {"XIA3"}, // 51
     {"TAIL"}, // 52
-    {"COR"},  // 53
-    {"CPOT"}  // 54
+    {"TOT"},  // 53
+    {"COR"},  // 54
+    {"CPOT"}  // 55
 };
 
 #include "SITE_XX.h"
@@ -427,16 +484,16 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,0           , EEPROM},
 	{&AuxOut[1]     ,0           , EEPROM},
 	{&AuxOut[2]     ,0           , EEPROM},
-	{&RXPriority[0] ,2           , EEPROM},
+	{&RXPriority[0] ,4           , EEPROM},
 	{&RXPriority[1] ,6           , EEPROM},
 	{&RXPriority[2] ,6           , EEPROM},
-	{&RXPriority[3] ,4           , EEPROM},
+	{&RXPriority[3] ,2           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
 	{&SiteID        ,SITE_ID_VAL , EEPROM},
-	{&MorseDitLength ,1          , EEPROM},
+	{&TXSiteID      ,0x12        , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},
   {&Morse[2]      ,2           , EEPROM},
@@ -456,6 +513,7 @@ struct sRegMap_t const RegMap[]={
 	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
 	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
   {&Tail          ,TAIL_CHAR   , EEPROM},
+  {&TOT_Min       ,TOT_MIN     , EEPROM},
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };
