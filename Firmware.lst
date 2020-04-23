@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               21-Apr-20 22:53
+CCS PCM C Compiler, Version 4.140, 64991               22-Apr-20 19:54
 
-               Filename:   C:\Users\Luc\Projects\RC2G\Firmware.lst
+               Filename:   C:\Users\Luc\Projects\RC2G Branches\RC2G - VE2YDP\Firmware.lst
 
                ROM used:   8158 words (100%)
                            Largest free fragment is 17
@@ -3460,12 +3460,12 @@ CCS PCM C Compiler, Version 4.140, 64991               21-Apr-20 22:53
 .................... 	{&RX_PTT[3]     ,0x07        , EEPROM}, 
 .................... 	{&SiteID        ,SITE_ID_VAL , EEPROM}, 
 .................... 	{&TXSiteID      ,0x12        , EEPROM}, 
-....................   {&Morse[0]      ,MCHAR('v')  , EEPROM}, 
-....................   {&Morse[1]      ,MCHAR('e')  , EEPROM}, 
-....................   {&Morse[2]      ,2           , EEPROM}, 
-....................   {&Morse[3]      ,MCHAR('r')  , EEPROM}, 
-....................   {&Morse[4]      ,MCHAR('e')  , EEPROM}, 
-....................   {&Morse[5]      ,MCHAR('h')  , EEPROM}, 
+....................     {&Morse[0]      ,MORSEID0    , EEPROM}, 
+....................     {&Morse[1]      ,MORSEID1    , EEPROM}, 
+....................     {&Morse[2]      ,MORSEID2    , EEPROM}, 
+....................     {&Morse[3]      ,MORSEID3    , EEPROM}, 
+....................     {&Morse[4]      ,MORSEID4    , EEPROM}, 
+....................     {&Morse[5]      ,MORSEID5    , EEPROM}, 
 .................... 	{&AuxOutOp[0]   ,AUXOUTOP0   , EEPROM}, 
 .................... 	{&AuxOutOp[1]   ,AUXOUTOP1   , EEPROM}, 
 .................... 	{&AuxOutOp[2]   ,AUXOUTOP2   , EEPROM}, 
