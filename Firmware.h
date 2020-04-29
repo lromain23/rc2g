@@ -99,7 +99,7 @@ unsigned int1 sBufferFlag;
 #define DECREMENT_REG 7
 #define STATUS    8
 #define ADMIN     9
-#define ADMIN_TIMEOUT 240
+#define ADMIN_TIMEOUT 255
 char admin_timer;
 // Admin args:
 #define DEBOUNCE_COUNT 8
@@ -375,6 +375,8 @@ int1       rs232_mode;
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
 #define DTMF_INT_MASK 0x10
+// WPUE must be set to 0
+#bit  WPUEN = 0x095.7
 #byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
 

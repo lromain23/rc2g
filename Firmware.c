@@ -795,7 +795,7 @@ int _init_variables (int1 source) { // {{{
   }
   if ( source == USE_EEPROM_VARS ) {
     if ( read_eeprom(eeprom_index) != cksum ) {
-       retVal = 0 ; // Error : Checksum does not match whenn initializing variables from EEPROM
+       retVal = 0 ; // Error : Checksum does not match when initializing variables from EEPROM
     }
   }
   return (retVal);
@@ -849,11 +849,6 @@ void initialize (void) { // {{{
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
-  WPUB=0x00;
-  // AuxIn pins : B6, B7, C0
-  port_b_pullups(AUX_IN0|AUX_IN1);
-  // No pull-ups are available on port c
-  //port_c_pullups(AUX_IN2);
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -879,6 +874,20 @@ void initialize (void) { // {{{
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  // Port B Pullups {{{
+  // AuxIn pins : B6, B7, C0
+  // Port_x_pullups requires a bit value corresponding to each
+  // bit.
+  // AuxIn 1:0: Pins B6&B7
+  // COR 3:0: Pins B3:B0
+  // DTMF interrupt : PIN_B4 (No pull-up required)
+  // PIN_B5 : Adjust trmipot. Nu pull-up required
+  // port_b_pullups(0b11000000 | (Polarity & 0x0F));
+  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  // Set WPUEN (bar) bit on OPTION_REG
+  // Master Weak pull-up enable
+  WPUEN = 0;
+  // }}}
   header();
   // C7 : UART RX
   // C6 : UART TX
@@ -1163,6 +1172,7 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
 void update_aux_in(void) { // {{{
   int x;
   for(x=0;x<3;x++) {
+    // AuxIn is enabled via RS232 only for test/emulation purpose
     AuxInSW[x] = (input(AUX_IN_PIN[x])!=0) || (AuxIn[x]!=0);
   }
 } // }}}
@@ -1269,7 +1279,6 @@ void main (void) { // {{{
       adj_value_a = read_adc() >> 2;
       adj_value_b = adj_value_a;
       button_state=TRIM;
-      CurrentTrimPot = 0;
       pot_values_to_lcd();
       break;
     case TRIM:
@@ -1277,7 +1286,7 @@ void main (void) { // {{{
          adj_value_a = read_adc() >> 2;
          if ( adj_value_a != adj_value_b ) {
            rs232_mode = 1;
-           set_trimpot(CurrentTrimPot, 64-adj_value_a);
+           set_trimpot(CurrentTrimPot, 63-adj_value_a);
            pot_values_to_lcd();
            rs232_mode = 0;
          }

@@ -10,8 +10,8 @@
 #define MORSEID1	MCHAR('e')
 #define MORSEID2	2
 #define MORSEID3	MCHAR('r')
-#define MORSEID4	MCHAR('h')
-#define MORSEID5	36
+#define MORSEID4	MCHAR('e')
+#define MORSEID5	MCHAR('h')
 
 #define AUXOUTOP0 0
 #define AUXOUTARG0 0
