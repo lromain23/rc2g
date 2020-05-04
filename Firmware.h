@@ -17,6 +17,8 @@
 #include <string.h>
 #define MCHAR(c) c-'a'+10
 
+#define MIN_COUNTER 29
+#define SEC_COUNTER 59
 #define TAIL_CHAR 0
 
 #use delay(internal=8M,restart_wdt)
@@ -64,6 +66,7 @@ unsigned int Tail;
 unsigned int TOT_Min;
 unsigned int COR_EMUL;
 unsigned int TailChar;
+unsigned int ConfirmChar;
 // Variables accessed using linear addressing }}}
 
 // COR variables {{{
@@ -90,7 +93,7 @@ unsigned int1 sBufferFlag;
 #define DECREMENT_REG 7
 #define STATUS    8
 #define ADMIN     9
-#define ADMIN_TIMEOUT 60
+#define ADMIN_TIMEOUT 240 
 char admin_timer;
 // Admin args:
 #define IDLE          0
@@ -287,6 +290,7 @@ int1	     DTMF_IN_FLAG;
 int1	     CLEAR_DTMF_FLAG;
 int1       PROMPT_FLAG;
 int1       AdminMode;
+int1       rs232_mode;
 
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
@@ -367,6 +371,7 @@ int1       AdminMode;
 #ifndef POLARITY_DEF_VAL
   #define POLARITY_DEF_VAL 0x0F
 #endif
+// ENABLE_DEFAULT <Morse Enable [3:0]>,<COR_ENABLE[3:0]>
 #ifndef ENABLE_DEFAULT
   #define ENABLE_DEFAULT 0x0F
 #endif
@@ -437,7 +442,7 @@ char const reg_name[][REG_NAME_SIZE]={
 #include "SITE_XX.h"
 
 struct sRegMap_t const RegMap[]={
-	{&Enable        ,ENABLE_DEFAULT  ,EEPROM},
+	{&Enable        ,ENABLE_DEFAULT,EEPROM},
 	{&Polarity      ,POLARITY_DEF_VAL,EEPROM},
 	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
@@ -463,14 +468,14 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[2]     ,0           , EEPROM},
 	{&RXPriority[0] ,2           , EEPROM},
 	{&RXPriority[1] ,6           , EEPROM},
-	{&RXPriority[2] ,6           , EEPROM},
+	{&RXPriority[2] ,4           , EEPROM},
 	{&RXPriority[3] ,4           , EEPROM},
 	{&RX_PTT[0]     ,0x0E        , EEPROM},
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
 	{&SiteID        ,SITE_ID_VAL , EEPROM},
-	{&TXSiteID      ,0x12         , EEPROM},
+	{&TXSiteID      ,0x12        , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},
   {&Morse[2]      ,2           , EEPROM},

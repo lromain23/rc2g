@@ -252,7 +252,9 @@ void process_sBuffer(void) { // {{{
     value = 1;
     argument = CurrentTrimPot;
   }
+  rs232_mode = 1;
   execute_command();
+  rs232_mode = 0;
 } // }}}
 void clearscr(void) { // {{{
 // Erase the screen 
@@ -331,12 +333,12 @@ void update_ptt(int cor) { // {{{
   CurrentCorIndex=cor;
 
   if ( cor ) {
-    ptt=RX_PTT[cor-1] & (Enable&Enable_Mask);
+    ptt=RX_PTT[cor-1] & (Enable & Enable_Mask);
   } else {
     ptt=0;
     if ( COR_DROP_FLAG ) {
       COR_DROP_FLAG=0;
-      if ( TailChar ) {
+      if ( ConfirmChar || TailChar ) {
         send_tail();
       }
     }
@@ -441,6 +443,7 @@ void process_dtmf(void) { // {{{
   // Ex: (# = 12)
   // Enter Admin mode       : 52 09 01 #
   // Reboot                 : 52 09 02 #
+  // Send Morse ID          : 52 09 03 #
   // Set XO3(22) to 0       : 52 02 22 0 #
   // Set XO3(22) to 1       : 52 02 22 1 #
   // Change to pot 4        : 52 02 55 3 #
@@ -519,7 +522,7 @@ void process_cor (void) { // {{{
   cor_index=0;
   for(x=0;x<4;x++) {
     if ( cor_in & cor_mask ) {
-      if ( (Enable&Enable_Mask) & cor_mask ) {
+      if ( (Enable & Enable_Mask) & cor_mask ) {
         rx_priority=RXPriority[x];
       } else {
         // Radio is not enabled. Only listen for DTMF (if no other radio is enabled).
@@ -887,16 +890,17 @@ void initialize (void) { // {{{
   set_tris_c(0b10011101);
   init_trimpot();
   // Initialize RTC
-  rtcc_cnt=60;
+  rtcc_cnt=30;
   setup_timer_0(T0_INTERNAL|T0_DIV_256);
   enable_interrupts(INT_TIMER0);
   update_ptt(0);
-  MinuteCounter=30;
-  SecondCounter=60;
+  MinuteCounter=MIN_COUNTER;
+  SecondCounter=SEC_COUNTER;
   THIRTY_MIN_FLAG=0;
   MINUTE_FLAG=0;
   PROMPT_FLAG=1;
   TailChar=Tail;
+  ConfirmChar=0;
   AuxOut[0] = PO_AUX_OUT0;
   AuxOut[1] = PO_AUX_OUT1;
   AuxOut[2] = PO_AUX_OUT2;
@@ -905,6 +909,7 @@ void initialize (void) { // {{{
   AuxInSW[2] = 0;
   AUX_IN_FLAG = 0;
   set_admin_mode(0);
+  rs232_mode=0;
   printf("\n\rInitialization complete");
 } // }}}
 
@@ -944,8 +949,8 @@ void tokenize_sBuffer() { // {{{
       command=GET_REG;
     } else {
       command=SET_REG;
-      // infer admin mode?
-      //set_admin_mode(1);
+      // infer admin mode when using "SET" command over RS232?
+      // set_admin_mode(1);
     }
   } // }}}
   // Check for "SAVE" command {{{
@@ -1191,6 +1196,9 @@ void update_aux_out(void) { // {{{
 void send_morse_id (void) { // {{{
   int x;
   int mchar;
+  // Send morse as if it was received from COR(1) -- Link radio
+  update_ptt(1); // 
+  delay_ms(1000);
   for(x=0;x<6;x++) {
     mchar=Morse[x];
     morse(mchar);
@@ -1200,14 +1208,16 @@ void send_morse_id (void) { // {{{
       delay_cycles(1);
     }
   }
+  delay_ms(1000);
+  COR_FLAG=1;
 } // }}}
 
 void main (void) { // {{{
   int x,dtmf;
+  char tmp[5];
   initialize();
 
   while(1) { // {{{
-    char tmp[5];
   restart_wdt();
     // Process RS232 Serial Buffer Flag {{{
     // The sBufferFlag is set when a "#" or a "\r" is received.
@@ -1224,6 +1234,8 @@ void main (void) { // {{{
     }
     if ( SECOND_FLAG ) {
       update_aux_out();
+//      sprintf(LCD_str,"%u:%u (%u)",MinuteCounter,SecondCounter,TXSiteID);
+//      lcd_send(2,LCD_str);
       // Time Out PTT {{{
       if ( TOT_SecondCounter || TOT_Min == 0) {
         TOT_SecondCounter--;
@@ -1247,12 +1259,12 @@ void main (void) { // {{{
       if ( SecondCounter ) {
         SecondCounter--;
       } else {
-        SecondCounter=60;
+        SecondCounter=SEC_COUNTER;
         if ( MinuteCounter ) {
           MinuteCounter--;
         } else {
           THIRTY_MIN_FLAG=1;
-          MinuteCounter = 30;
+          MinuteCounter = MIN_COUNTER;
         }
       }
       SECOND_FLAG=0;
@@ -1263,7 +1275,7 @@ void main (void) { // {{{
         // TXSiteID = <EnableMask[3:0]>,{x,x,M,E}
         // E = Transmit every 30 mins
         // M = Transmit only if EnableMask is off
-        if ( (TXSiteID & 0x01)!=0 || ( (TXSiteID & 0x02)!=0 && ( ((TXSiteID & 0xF0) >> 4) && Enable)==0) ) {
+        if ( (TXSiteID & 0x01)!=0 || ( (TXSiteID & 0x02)!=0 && ( ((TXSiteID >> 4) & 0x0F) & Enable)==0) ) {
           send_morse_id();
         }
       }
@@ -1315,19 +1327,33 @@ void main (void) { // {{{
 
 // send_tail {{{
 void send_tail(void) {
-  morse(TailChar);
+  delay_ms(1000);
+  if ( ConfirmChar!=0 ) {
+    morse(ConfirmChar);
+    ConfirmChar=0;
+    delay_ms(500);
+  }
+  if (TailChar != 0) {
+    morse(TailChar);
+    delay_ms(500);
+  }
 }
 // send_tail }}}
 
 int1 in_admin_mode(void) {
   // Refresh timer
   set_admin_mode(AdminMode);
-  return(AdminMode);
+  return(AdminMode||rs232_mode);
 }
 void set_admin_mode(int1 enable) {
   AdminMode = (enable!=0);
   if (AdminMode) {
+    // Enter Admin mode
+    ConfirmChar = MCHAR('a');
     admin_timer = ADMIN_TIMEOUT;
-  }
+  } else {
+    // Exit / out of admin mode
+    ConfirmChar = MCHAR('o');
+  } 
 }
 

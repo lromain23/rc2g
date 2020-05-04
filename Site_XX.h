@@ -2,7 +2,8 @@
 #define SITE_ID_VAL  	52
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
-#define ENABLE_DEFAULT 15
+// ENABLE_DEFAULT <Morse Enable [3:0]>,<COR_ENABLE[3:0]>
+#define ENABLE_DEFAULT 0xEF
 #define TOT_MIN 5
 #define DEFAULT_GAIN 22
 
@@ -23,7 +24,7 @@
 // AuxIn1 used by AuxOut 1
 #define AUXINOP0  AUXI_EMULATE_COR
 #define AUXINARG0 AUXI_EMULATE_COR0 | AUXI_EMULATE_COR_ACTIVE_LO
-#define AUXINOP1  AUXI_TAIL_WHEN_LO
+#define AUXINOP1  AUXI_TAIL_WHEN_HI
 #define AUXINARG1 MCHAR('b')
 #define AUXINOP2  0
 #define AUXINARG2 0
@@ -31,6 +32,3 @@
 #define PO_AUX_OUT0 1
 #define PO_AUX_OUT1 1
 #define PO_AUX_OUT2 1
-
-
-
