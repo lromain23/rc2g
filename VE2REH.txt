@@ -1,9 +1,9 @@
 Site ID   Controlleur     Statut      Prix    SHA1
 =======   ===========     ======      ====    ====
-20        VE2YDP          Built       100$
-21        VE2YDP          Built       100$
+20        VE2YDP          Built       120$
+21        VE2YDP          Built       120$
+50        Developpement   Built
 52        Buckingham      EnCours
-50        Developpement
 51        Ripon
 
 
