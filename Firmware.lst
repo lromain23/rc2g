@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
+CCS PCM C Compiler, Version 4.140, 64991               18-May-20 17:58
 
-               Filename:   C:\Users\Luc\Projects\RC2G\Firmware.lst
+               Filename:   C:\Users\Luc\Projects\RC2G Branches\RC2Gb - Aubin\Firmware.lst
 
                ROM used:   8159 words (100%)
                            Largest free fragment is 17
@@ -3349,9 +3349,9 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 .................... 	{"R4G2"},	  // 15 
 .................... 	{"R4G3"},	  // 16 
 .................... 	{"R4G4"},	  // 17 
-.................... 	{"XI1"},	  // 18 
-.................... 	{"XI2"},	  // 19 
-.................... 	{"XI3"},	  // 20 
+.................... 	{"XI1"},	  // 18 AuxIn[0] 
+.................... 	{"XI2"},	  // 19 AuxIn[1] 
+.................... 	{"XI3"},	  // 20 AuxIn[2] 
 .................... 	{"XO1"},	  // 21 
 .................... 	{"XO2"},	  // 22 
 .................... 	{"XO3"},	  // 23 
@@ -3391,7 +3391,7 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 ....................  
 .................... #include "SITE_XX.h" 
 ....................  
-.................... #define SITE_ID_VAL  	20 
+.................... #define SITE_ID_VAL  	22 
 .................... #define SITE_GID_VAL 	90 
 .................... #define POLARITY_DEF_VAL 0x0F  
 .................... #define ENABLE_DEFAULT 15 
@@ -3401,9 +3401,9 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 .................... #define MORSEID0	MCHAR('v') 
 .................... #define MORSEID1	MCHAR('e') 
 .................... #define MORSEID2	2 
-.................... #define MORSEID3	MCHAR('r') 
-.................... #define MORSEID4	MCHAR('e') 
-.................... #define MORSEID5	MCHAR('h') 
+.................... #define MORSEID3	MCHAR('y') 
+.................... #define MORSEID4	MCHAR('o') 
+.................... #define MORSEID5	MCHAR('u') 
 ....................  
 .................... #define AUXOUTOP0 0 
 .................... #define AUXOUTARG0 0 
