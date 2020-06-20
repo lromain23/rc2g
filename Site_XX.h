@@ -1,5 +1,8 @@
+// AuxIn1  --> Input from hydro out
+// AuxOut2 --> Connected to 6M TX (Radio 4)
+// AuxOut1 --> Connected to 2M TX (Radio 2)
 
-#define SITE_ID_VAL  	51
+#define SITE_ID_VAL  	53
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
