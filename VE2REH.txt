@@ -1,0 +1,10 @@
+Site ID   Controlleur
+=======   ===========
+50        Developpement
+51        Ripon
+52        Buckingham
+53        Ste-Marie
+
+20        VE2YDP
+21        VE2YDP
+
