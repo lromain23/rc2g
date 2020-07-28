@@ -4,17 +4,82 @@ Version=1.0
 [File000]
 Location=C:\Users\Luc\Projects\RC2G - Ripon\Firmware.o
 Folder=Intermediary
+DeviceName=
+LanguageToolSuiteID=
+LanguageToolID=
+LanguageToolLocation=
+PPAD=
+SOLK=
+SuiteArgsString=
+ToolArgsString=
+TraceCmdString=
+DebugOptions=
 [File001]
+Location=C:\Users\Luc\Projects\RC2G Branches\RC2Ga - Ripon\Firmware.o
+Folder=Intermediary
+[File002]
 Location=C:\Users\Luc\Projects\RC2G - Ripon\Firmware.HEX
 Folder=Output
-[File002]
+DeviceName=
+LanguageToolSuiteID=
+LanguageToolID=
+LanguageToolLocation=
+PPAD=
+SOLK=
+SuiteArgsString=
+ToolArgsString=
+TraceCmdString=
+DebugOptions=
+[File003]
 Location=C:\Users\Luc\Projects\RC2G - Ripon\Firmware.LST
 Folder=Output
-[File003]
+DeviceName=
+LanguageToolSuiteID=
+LanguageToolID=
+LanguageToolLocation=
+PPAD=
+SOLK=
+SuiteArgsString=
+ToolArgsString=
+TraceCmdString=
+DebugOptions=
+[File004]
 Location=C:\Users\Luc\Projects\RC2G - Ripon\Firmware.ERR
 Folder=Output
-[File004]
+DeviceName=
+LanguageToolSuiteID=
+LanguageToolID=
+LanguageToolLocation=
+PPAD=
+SOLK=
+SuiteArgsString=
+ToolArgsString=
+TraceCmdString=
+DebugOptions=
+[File005]
 Location=C:\Users\Luc\Projects\RC2G - Ripon\Firmware.COF
+Folder=Output
+DeviceName=
+LanguageToolSuiteID=
+LanguageToolID=
+LanguageToolLocation=
+PPAD=
+SOLK=
+SuiteArgsString=
+ToolArgsString=
+TraceCmdString=
+DebugOptions=
+[File006]
+Location=C:\Users\Luc\Projects\RC2G Branches\RC2Ga - Ripon\Firmware.HEX
+Folder=Output
+[File007]
+Location=C:\Users\Luc\Projects\RC2G Branches\RC2Ga - Ripon\Firmware.LST
+Folder=Output
+[File008]
+Location=C:\Users\Luc\Projects\RC2G Branches\RC2Ga - Ripon\Firmware.ERR
+Folder=Output
+[File009]
+Location=C:\Users\Luc\Projects\RC2G Branches\RC2Ga - Ripon\Firmware.COF
 Folder=Output
 [TOOL_LOC_STAMPS]
 tool_loc{0C155615-B197-4A4B-AEB6-343BB3F41A35}=C:\Program Files (x86)\PICC\Ccsc.exe

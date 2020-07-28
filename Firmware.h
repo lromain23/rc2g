@@ -323,6 +323,7 @@ int1       PROMPT_FLAG;
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
 #define DTMF_INT_MASK 0x10
+#bit  WPUEN = 0x095.7
 #byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
 

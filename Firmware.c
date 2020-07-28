@@ -757,8 +757,6 @@ void initialize (void) { // {{{
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
-  WPUB=0x00;
-  port_b_pullups(PIN_B7|PIN_B6);
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -784,6 +782,20 @@ void initialize (void) { // {{{
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  // Port B Pullups {{{
+  // AuxIn pins : B6, B7, C0
+  // Port_x_pullups requires a bit value corresponding to each
+  // bit.
+  // AuxIn 1:0: Pins B6&B7
+  // COR 3:0: Pins B3:B0
+  // DTMF interrupt : PIN_B4 (No pull-up required)
+  // PIN_B5 : Adjust trmipot. Nu pull-up required
+  // port_b_pullups(0b11000000 | (Polarity & 0x0F));
+  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  // Set WPUEN (bar) bit on OPTION_REG
+  // Master Weak pull-up enable
+  WPUEN = 0;
+  // }}}
   header();
   // C7 : UART RX
   // C6 : UART TX
