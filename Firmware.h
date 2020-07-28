@@ -323,6 +323,7 @@ int1       PROMPT_FLAG;
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
 #define DTMF_INT_MASK 0x10
+#bit  WPUEN = 0x095.7
 #byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
 
@@ -399,7 +400,7 @@ char const reg_name[][REG_NAME_SIZE]={
 #include "SITE_XX.h"
 
 struct sRegMap_t const RegMap[]={
-	{&Enable        ,ENABLE_DEFAULT  ,EEPROM},
+	{&Enable        ,ENABLE_DEFAULT  ,EEPROM}, // 0
 	{&Polarity      ,POLARITY_DEF_VAL,EEPROM},
 	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
@@ -407,7 +408,7 @@ struct sRegMap_t const RegMap[]={
 	{&RX_GAIN[0][3] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[1][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[1][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[1][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[1][2] ,DEFAULT_GAIN, EEPROM}, // 8
 	{&RX_GAIN[1][3] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[2][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[2][1] ,DEFAULT_GAIN, EEPROM},
@@ -415,7 +416,7 @@ struct sRegMap_t const RegMap[]={
 	{&RX_GAIN[2][3] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][0] ,DEFAULT_GAIN, EEPROM},
 	{&RX_GAIN[3][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM},
+	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM}, // 16
 	{&RX_GAIN[3][3] ,DEFAULT_GAIN, EEPROM},
 	{&AuxIn[0]      ,0           , EEPROM},
 	{&AuxIn[1]      ,0           , EEPROM},
@@ -423,7 +424,7 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,0           , EEPROM},
 	{&AuxOut[1]     ,0           , EEPROM},
 	{&AuxOut[2]     ,0           , EEPROM},
-	{&RXPriority[0] ,2           , EEPROM},
+	{&RXPriority[0] ,2           , EEPROM}, // 24
 	{&RXPriority[1] ,6           , EEPROM},
 	{&RXPriority[2] ,6           , EEPROM},
 	{&RXPriority[3] ,4           , EEPROM},
@@ -431,13 +432,13 @@ struct sRegMap_t const RegMap[]={
 	{&RX_PTT[1]     ,0x0D        , EEPROM},
 	{&RX_PTT[2]     ,0x0B        , EEPROM},
 	{&RX_PTT[3]     ,0x07        , EEPROM},
-	{&SiteID        ,50          , EEPROM},
+	{&SiteID        ,SITE_ID_VAL , EEPROM}, // 32
 	{&MorseDitLength ,1          , EEPROM},
   {&Morse[0]      ,MCHAR('v')  , EEPROM},
   {&Morse[1]      ,MCHAR('e')  , EEPROM},
   {&Morse[2]      ,2           , EEPROM},
   {&Morse[3]      ,MCHAR('r')  , EEPROM},
-  {&Morse[4]      ,MCHAR('e')  , EEPROM},
+  {&Morse[4]      ,MCHAR('e')  , EEPROM}, // 38
   {&Morse[5]      ,MCHAR('h')  , EEPROM},
 	{&AuxOutOp[0]   ,AUXOUTOP0   , EEPROM},
 	{&AuxOutOp[1]   ,AUXOUTOP1   , EEPROM},
@@ -447,11 +448,11 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOutArg[2]  ,AUXOUTARG2  , EEPROM},
 	{&AuxInOp[0]    ,AUXINOP0    , EEPROM},
 	{&AuxInOp[1]    ,AUXINOP1    , EEPROM},
-	{&AuxInOp[2]    ,AUXINOP2    , EEPROM},
+	{&AuxInOp[2]    ,AUXINOP2    , EEPROM}, // 48
 	{&AuxInArg[0]   ,AUXINARG0   , EEPROM},
 	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
 	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
-  {&Tail          ,TAIL_CHAR   , EEPROM},
+  {&Tail          ,TAIL_CHAR   , EEPROM}, // 52
 	{&COR_EMUL      ,0x00        , RAM},
 	{&CurrentTrimPot,0x00        , RAM},
 };

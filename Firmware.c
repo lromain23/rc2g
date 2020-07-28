@@ -107,6 +107,8 @@ void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
   int lcd_cmd;
+  rom char * cPtr;
+  char rname[REG_NAME_SIZE];
   switch(command) {
     case SET_REG:
       set_var();
@@ -115,6 +117,10 @@ void execute_command(void) { // {{{
       regPtr=RegMap[argument].reg_ptr;
       LastRegisterIndex = argument;
       LastRegisterIndexValid=1;
+      cPtr = &reg_name + ((unsigned long)argument * REG_NAME_SIZE);
+  	  romstrcpy(rname,cPtr);
+      printf("\n\r[%02u] %s %u\n\r",argument,rname,*regPtr);
+      prompt();
       break;
     case SAVE_SETTINGS:
       store_variables();
@@ -170,6 +176,7 @@ void process_sBuffer(void) { // {{{
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
 
+  lcd_send(2,sBuffer);
   tokenize_sBuffer();
 
   argument=-1;
@@ -750,7 +757,6 @@ void initialize (void) { // {{{
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
-  WPUB=0x00;
   COR_IN=0;
   COR_DROP_FLAG=0;
   LastRegisterIndexValid=0;
@@ -776,6 +782,20 @@ void initialize (void) { // {{{
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  // Port B Pullups {{{
+  // AuxIn pins : B6, B7, C0
+  // Port_x_pullups requires a bit value corresponding to each
+  // bit.
+  // AuxIn 1:0: Pins B6&B7
+  // COR 3:0: Pins B3:B0
+  // DTMF interrupt : PIN_B4 (No pull-up required)
+  // PIN_B5 : Adjust trmipot. Nu pull-up required
+  // port_b_pullups(0b11000000 | (Polarity & 0x0F));
+  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  // Set WPUEN (bar) bit on OPTION_REG
+  // Master Weak pull-up enable
+  WPUEN = 0;
+  // }}}
   header();
   // C7 : UART RX
   // C6 : UART TX
@@ -787,7 +807,6 @@ void initialize (void) { // {{{
   // C0 : Aux2 In
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
-//  port_b_pullups(PIN_B7|PIN_B6);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=60;
@@ -801,6 +820,9 @@ void initialize (void) { // {{{
   MINUTE_FLAG=0;
   PROMPT_FLAG=1;
   TailChar=Tail;
+  AuxOut[0] = PO_AUX_OUT0;
+  AuxOut[1] = PO_AUX_OUT1;
+  AuxOut[2] = PO_AUX_OUT2;
 } // }}}
 
 void tokenize_sBuffer() { // {{{
@@ -884,6 +906,13 @@ void tokenize_sBuffer() { // {{{
   strcpy(smatch_reg,"-");  
   if ( stricmp(smatch_reg,verb) == 0 ) {
     command=DECREMENT_REG;
+  } // }}}
+  // Check for "/ (Next CPOT)" command {{{
+  strcpy(smatch_reg,"n");  
+  if ( stricmp(smatch_reg,verb) == 0 ) {
+    command=SET_REG;
+    value = (CurrentTrimPot + 1)&0x03;
+    strcpy(argument_name,"CPOT");
   } // }}}
 } // }}}
 
