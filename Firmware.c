@@ -507,7 +507,8 @@ void process_cor (void) { // {{{
 
   cor_mask=1;
   do_update_ptt=0;
-  cor_in = COR_IN | (COR_EMUL&0x0F);
+  // Allow emulated COR[4] for DTMF control (No audio feed-thru)
+  cor_in = COR_IN | (COR_EMUL&0x1F);
   // Different COR was waiting for the active one to fall.
   if ( CurrentCorPriority && !(cor_in&CurrentCorMask) ) {
     CurrentCorPriority=0;
@@ -549,6 +550,7 @@ void process_cor (void) { // {{{
   }
   // Clear the DTMF array when all CORs fall
   if ( !cor_in ) {
+    // --> Don't clear the DTMF if the Aux Input is emulating a COR
     CLEAR_DTMF_FLAG=1;
   }
 } // }}}

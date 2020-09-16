@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
+CCS PCM C Compiler, Version 4.140, 64991               16-Sep-20 13:57
 
-               Filename:   C:\Users\Luc\Projects\RC2G\Firmware.lst
+               Filename:   C:\Users\Luc\Projects\RC2G Branches\RC2G_b\61_Mario\Firmware.lst
 
                ROM used:   8159 words (100%)
                            Largest free fragment is 17
@@ -3084,7 +3084,7 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 .................... #define AUXI_EMULATE_COR1 0x02 
 .................... #define AUXI_EMULATE_COR2 0x04 
 .................... #define AUXI_EMULATE_COR3 0x08 
-....................  
+.................... #define AUXI_EMULATE_COR4 0x10 // COR from AUX only for DTMF control (No audio feed-thru) 
 ....................  
 .................... // Digital TrimPot 
 .................... // 
@@ -3349,9 +3349,9 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 .................... 	{"R4G2"},	  // 15 
 .................... 	{"R4G3"},	  // 16 
 .................... 	{"R4G4"},	  // 17 
-.................... 	{"XI1"},	  // 18 
-.................... 	{"XI2"},	  // 19 
-.................... 	{"XI3"},	  // 20 
+.................... 	{"XI1"},	  // 18 AuxIn[0] 
+.................... 	{"XI2"},	  // 19 AuxIn[1] 
+.................... 	{"XI3"},	  // 20 AuxIn[2] 
 .................... 	{"XO1"},	  // 21 
 .................... 	{"XO2"},	  // 22 
 .................... 	{"XO3"},	  // 23 
@@ -3391,7 +3391,7 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 ....................  
 .................... #include "SITE_XX.h" 
 ....................  
-.................... #define SITE_ID_VAL  	20 
+.................... #define SITE_ID_VAL  	61 
 .................... #define SITE_GID_VAL 	90 
 .................... #define POLARITY_DEF_VAL 0x0F  
 .................... #define ENABLE_DEFAULT 15 
@@ -3401,9 +3401,9 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 .................... #define MORSEID0	MCHAR('v') 
 .................... #define MORSEID1	MCHAR('e') 
 .................... #define MORSEID2	2 
-.................... #define MORSEID3	MCHAR('r') 
-.................... #define MORSEID4	MCHAR('e') 
-.................... #define MORSEID5	MCHAR('h') 
+.................... #define MORSEID3	MCHAR('m') 
+.................... #define MORSEID4	MCHAR('a') 
+.................... #define MORSEID5	MCHAR('d') 
 ....................  
 .................... #define AUXOUTOP0 0 
 .................... #define AUXOUTARG0 0 
@@ -5909,10 +5909,11 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 1C32:  MOVWF  6B
 ....................   do_update_ptt=0; 
 1C33:  CLRF   6F
-....................   cor_in = COR_IN | (COR_EMUL&0x0F); 
+....................   // Allow emulated COR[4] for DTMF control (No audio feed-thru) 
+....................   cor_in = COR_IN | (COR_EMUL&0x1F); 
 1C34:  MOVLB  00
 1C35:  MOVF   67,W
-1C36:  ANDLW  0F
+1C36:  ANDLW  1F
 1C37:  IORWF  5F,W
 1C38:  MOVLB  01
 1C39:  MOVWF  6E
@@ -6074,6 +6075,7 @@ CCS PCM C Compiler, Version 4.140, 64991               28-Apr-20 20:49
 ....................   if ( !cor_in ) { 
 1CAD:  MOVF   6E,F
 1CAE:  BTFSC  03.2
+....................     // --> Don't clear the DTMF if the Aux Input is emulating a COR 
 ....................     CLEAR_DTMF_FLAG=1; 
 1CAF:  BSF    5A.4
 ....................   } 

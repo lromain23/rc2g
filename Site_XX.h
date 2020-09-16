@@ -1,5 +1,5 @@
 
-#define SITE_ID_VAL  	20
+#define SITE_ID_VAL  	61
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
@@ -9,9 +9,9 @@
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('e')
 #define MORSEID2	2
-#define MORSEID3	MCHAR('r')
-#define MORSEID4	MCHAR('e')
-#define MORSEID5	MCHAR('h')
+#define MORSEID3	MCHAR('m')
+#define MORSEID4	MCHAR('a')
+#define MORSEID5	MCHAR('d')
 
 #define AUXOUTOP0 0
 #define AUXOUTARG0 0
