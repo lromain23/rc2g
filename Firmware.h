@@ -79,6 +79,7 @@ unsigned int ConfirmChar;
 unsigned int CurrentCorMask;
 unsigned int CurrentCorIndex;
 unsigned int CurrentCorPriority;
+char COR_IN_EFFECTIVE;
 // }}}
 
 // RS232 variables / buffers {{{
@@ -116,14 +117,14 @@ char admin_timer;
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
 // Follow COR args:
-#define AUX_OUT_FOLLOW_COR0 0x01
-#define AUX_OUT_FOLLOW_COR1 0x02
-#define AUX_OUT_FOLLOW_COR2 0x04
-#define AUX_OUT_FOLLOW_COR3 0x08
-#define AUX_OUT_FOLLOW_COR_INVERT0 0x10
-#define AUX_OUT_FOLLOW_COR_INVERT1 0x20
-#define AUX_OUT_FOLLOW_COR_INVERT2 0x40
-#define AUX_OUT_FOLLOW_COR_INVERT3 0x80
+#define AUX_OUT_FOLLOW_COR1 0x01
+#define AUX_OUT_FOLLOW_COR2 0x02
+#define AUX_OUT_FOLLOW_COR3 0x04
+#define AUX_OUT_FOLLOW_COR4 0x08
+#define AUX_OUT_FOLLOW_COR_INVERT1 0x10
+#define AUX_OUT_FOLLOW_COR_INVERT2 0x20
+#define AUX_OUT_FOLLOW_COR_INVERT3 0x40
+#define AUX_OUT_FOLLOW_COR_INVERT4 0x80
 // Follow AUX_IN args:
 #define AUX_OUT_FOLLOW_AUX_IN0 0x01
 #define AUX_OUT_FOLLOW_AUX_IN0_INV 0x11
