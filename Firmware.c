@@ -51,6 +51,9 @@ void RB0_INT (void) { // {{{
       } else if ( value == d0 ) {
         value=dd;
       }
+      if ( value == ds ) {
+        CLEAR_DTMF_FLAG=1;
+      }
       // Check for '#'
       if ( value == dp ) {
         DTMF_FLAG = 1;
@@ -228,7 +231,7 @@ void process_sBuffer(void) { // {{{
   for(x=0;x<RegMapNum;x++) {
     cPtr = &reg_name + (x * REG_NAME_SIZE);
     romstrcpy(rname,cPtr);
-    if(stricmp(argument_name,rname)==0) {
+    if(my_stricmp(argument_name,rname)==0) {
       argument=x;
     }
   }
@@ -239,12 +242,12 @@ void process_sBuffer(void) { // {{{
     // d <digit> 
     value=str_to_decimal(argument_name);
     strcpy(rname,"eeprom");
-    if(stricmp(argument_name,rname)==0) {
+    if(my_stricmp(argument_name,rname)==0) {
       value=USE_EEPROM_VARS;
     }
     // save/restore <default>
     strcpy(rname,"default");
-    if(stricmp(argument_name,rname)==0) {
+    if(my_stricmp(argument_name,rname)==0) {
       value=USE_DEFAULT_VARS;
     }
   }
@@ -415,8 +418,8 @@ int ValidKeyRange(unsigned int a,unsigned int b) { // {{{
   return(valid);
 } // }}}
 void process_dtmf(void) { // {{{
-  int site_id;
-  int digit;
+  unsigned site_id;
+  unsigned digit;
   // Structure:
   // [SID1][SID0][CMD1][CMD0][ARG1][ARG0][Valx][Valy][Valz]
   //   0     1     2     3     4     5     6     7     8
@@ -947,7 +950,7 @@ void tokenize_sBuffer() { // {{{
   // }}}
   // Check for "SET" command {{{
   strcpy(smatch_reg,"set");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     if ( do_get_var ) {
       command=GET_REG;
     } else {
@@ -956,28 +959,28 @@ void tokenize_sBuffer() { // {{{
   } // }}}
   // Check for "SAVE" command {{{
   strcpy(smatch_reg,"SAVE");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
       command=SAVE_SETTINGS;
   } // }}}
   // Check for "RESTORE" command {{{
   strcpy(smatch_reg,"RESTORE");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
       command=RESTORE_SETTINGS;
   } // }}}
   // Check for "STATUS" command {{{
   strcpy(smatch_reg,"status");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=STATUS;
   } // }}}
   // Check for "reboot" command {{{
   strcpy(smatch_reg,"reboot");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=ADMIN;
     argument=REBOOT;
   } // }}}
   // Check for "dtmf" command {{{
   strcpy(smatch_reg,"d");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     //command=DTMF_SEND;
     command=0;
     value = str_to_decimal(argument_name);
@@ -990,7 +993,7 @@ void tokenize_sBuffer() { // {{{
   } // }}}
   // Check for "i2c" command {{{
   strcpy(smatch_reg,"i2c");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=I2C_SEND;
   } // }}}
   // Check for "morse" command {{{
@@ -998,7 +1001,7 @@ void tokenize_sBuffer() { // {{{
   // morse[36]     --> Silence
   // morse <value> 37 --> send site ID
   strcpy(smatch_reg,"morse");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     value = str_to_decimal(argument_name);
     if ( value < MORSE_CHAR_ARRAY_LENGTH ) {
       argument = 0;
@@ -1010,24 +1013,24 @@ void tokenize_sBuffer() { // {{{
   } // }}}
   // Check for "+ (INCR)" command {{{
   strcpy(smatch_reg,"+");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=INCREMENT_REG;
   } // }}}
   // Check for "- (DECR)" command {{{
   strcpy(smatch_reg,"-");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=DECREMENT_REG;
   } // }}}
   // Check for "n (Next CPOT)" command {{{
   strcpy(smatch_reg,"n");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     command=SET_REG;
     value = (CurrentTrimPot + 1)&0x03;
     strcpy(argument_name,"CPOT");
   } // }}}
   // AdminMode toggle Check for "admin" command {{{
   strcpy(smatch_reg,"admin");  
-  if ( stricmp(smatch_reg,verb) == 0 ) {
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
     AdminMode = ~AdminMode;
     set_admin_mode(AdminMode);
     PROMPT_FLAG = 1;
@@ -1436,3 +1439,17 @@ void set_admin_mode(int1 enable) { // {{{
   } 
 } // }}}
 
+// string matchnig function with case insensitive match.
+int1 my_stricmp(char *s1,char *s2) { // {{{
+  unsigned int x=0;
+  int1 done=0;
+  const char AMASK=0xDF;
+  while((AMASK&s1[x])==(AMASK&s2[x])) {
+    if(s1[x]==0) {
+      return 0;
+    }
+    x++;
+  }
+  // Strings don't match. Return 1.
+  return 1;
+} // }}}
