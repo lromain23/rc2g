@@ -54,6 +54,7 @@ void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
 void update_aux_in(void);
 void update_aux_out(void);
+int1 my_stricmp(char *, char *);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
