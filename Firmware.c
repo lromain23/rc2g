@@ -1,5 +1,4 @@
 #include "Firmware.h"
-
 #INT_RDA
 void rs232_int (void) { // {{{
 // RS232 serial buffer interrupt handler.
@@ -28,7 +27,6 @@ void rs232_int (void) { // {{{
     }
   }
 } // }}}
-
 #INT_RB
 void RB0_INT (void) { // {{{
   int value,dtmf_status;
@@ -72,7 +70,6 @@ void RB0_INT (void) { // {{{
     clear_interrupt(INT_RB6|INT_RB7);
   }
 } // }}}
-
 #INT_TIMER0
 void int_rtcc(void) { // {{{
   if ( rtcc_cnt ) {
@@ -88,7 +85,6 @@ void int_rtcc(void) { // {{{
     aux_timer--;
   }
 } // }}}
-
 int1 warn_no_lcd = 1;
 void lcd_send(int line,char * s) { // {{{
   int lcd_cmd;
@@ -113,7 +109,6 @@ void lcd_send(int line,char * s) { // {{{
   i2c_stop();
 #endif
 } // }}}
-
 #ifdef BUTTON_STATES
 void status_led(void) { // {{{
   char cnt_val;
@@ -127,7 +122,6 @@ void status_led(void) { // {{{
   output_bit(STATUS_LED_PIN,STATUS_LED);
 } // }}}
 #endif
-
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
@@ -507,7 +501,8 @@ void process_cor (void) { // {{{
 
   cor_mask=1;
   do_update_ptt=0;
-  cor_in = COR_IN | (COR_EMUL&0x0F);
+  // Allow emulated COR[4] for DTMF control (No audio feed-thru)
+  cor_in = COR_IN | (COR_EMUL&0x1F);
   // Different COR was waiting for the active one to fall.
   if ( CurrentCorPriority && !(cor_in&CurrentCorMask) ) {
     CurrentCorPriority=0;
@@ -539,6 +534,8 @@ void process_cor (void) { // {{{
         cor_index=x+1;
         do_update_ptt=1;
         TOT_SecondCounter= 60 * TOT_Min;
+        // COR_IN_EFFECTIVE points to the one that is selected
+        COR_IN_EFFECTIVE=cor_mask;
       }
     }
     cor_mask = cor_mask << 1;
@@ -549,10 +546,11 @@ void process_cor (void) { // {{{
   }
   // Clear the DTMF array when all CORs fall
   if ( !cor_in ) {
+    // --> Don't clear the DTMF if the Aux Input is emulating a COR
     CLEAR_DTMF_FLAG=1;
+    COR_IN_EFFECTIVE=0;
   }
 } // }}}
-
 void clear_dtmf_array(void) { // {{{
   int x;
 
@@ -561,7 +559,6 @@ void clear_dtmf_array(void) { // {{{
   }
   DTMF_ptr=&DTMF_ARRAY[0];
 } // }}}
-
 void header (void) { // {{{
 //  putc(ESC);
 //  printf("[47;34m\n\rRadio Repeater Controller - ");
@@ -572,7 +569,6 @@ void header (void) { // {{{
 //  putc(ESC);
 //  printf("[40;37m");
 } // }}}
-
 void status (void) { // {{{
   unsigned long x;
   char y;
@@ -592,7 +588,11 @@ void status (void) { // {{{
     cPtr = &reg_name + (x*REG_NAME_SIZE);
     romstrcpy(rname,cPtr);
   regPtr=RegMap[x].reg_ptr;
-    printf("[%02Lu] %s %u\n\r",x,rname,*regPtr);
+    printf("[%02Lu] %s %u\t",x,rname,*regPtr);
+    if ( x %4 == 3 ) {
+      putc('\n');
+      putc('\r');
+    }
     restart_wdt();
   }
   for(y=0;y<3;y++) {
@@ -605,7 +605,6 @@ void status (void) { // {{{
   pot_values_to_lcd();
   PROMPT_FLAG=1;
 } // }}}
-
 void pot_values_to_lcd (void) { // {{{
   char x;
   int8 pot_val;
@@ -640,7 +639,6 @@ void pot_values_to_lcd (void) { // {{{
   printf("\n\r%s",LCD_str);
 
 } // }}}
-
 void prompt(void) { // {{{
   if ( AdminMode ) {
     printf("\n\n\rADMIN> ");
@@ -648,7 +646,6 @@ void prompt(void) { // {{{
     printf("\n\n\rCOMMAND> ");
   }
 } // }}}
-
 void clear_sBuffer(void) { // {{{
 // This function initializes the RS232 serial
 // buffer, index and flag.
@@ -663,7 +660,6 @@ void clear_sBuffer(void) { // {{{
   argument_name[0]='\0';
   command=0;
 } // }}}
-
 void dtmf_write(int data,int1 rs) { // {{{
   int1 dbit;
 // Write Data Bits {{{
@@ -686,7 +682,6 @@ void dtmf_write(int data,int1 rs) { // {{{
   delay_cycles(2);
   set_tris_d(0x0F);
 } // }}}
-
 int dtmf_read(int rs) { // {{{
   int value;
   set_tris_d(0x0F);
@@ -701,7 +696,6 @@ int dtmf_read(int rs) { // {{{
   delay_cycles(1);
   return(value);
 } // }}}
-
 void init_dtmf(void) { // {{{
     output_bit(DTMF_REB,1);
     output_bit(DTMF_WEB,1);
@@ -714,7 +708,6 @@ void init_dtmf(void) { // {{{
     dtmf_write(BURST_OFF,CONTROL_REG);
     dtmf_read(CONTROL_REG);
 } // }}}
-
 void dtmf_send_digit(int digit) { // {{{
   dtmf_write(digit,DATA_REG);
   dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
@@ -726,7 +719,6 @@ void dtmf_send_digit(int digit) { // {{{
   }
   dtmf_write(IRQ,CONTROL_REG); // Disable tones
 } // }}}
-
 void dit (void) { // {{{
   dtmf_write(1,DATA_REG);
   dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
@@ -751,7 +743,6 @@ void dah (void) { // {{{
   dtmf_write(IRQ,CONTROL_REG); // Disable tones
   restart_wdt();
 } // }}}
-
 void update_checksum (int *cksum,int value) { // {{{
   const int seed = 0x09;
   int tmp;
@@ -763,7 +754,6 @@ void update_checksum (int *cksum,int value) { // {{{
   tmp = ((tmp << 1)^seed)+value;
   *cksum=tmp;
 } // }}}
-
 int _init_variables (int1 source) { // {{{
   int x;
   int *regPtr;
@@ -800,7 +790,6 @@ int _init_variables (int1 source) { // {{{
   }
   return (retVal);
 } // }}}
-
 void store_variables(void) { // {{{
 // Save RAM variables in EEPROM
   int x;
@@ -826,7 +815,6 @@ void store_variables(void) { // {{{
   write_eeprom(eeprom_index,cksum);
   printf("\n\rSaving RAM configuration in EEPROM.");
 } // }}}
-
 void init_variables (int1 source) { // {{{
     // Attempt initialization from EEPROM and verify checksum.
     // If checksum does not match, use default variables.
@@ -836,7 +824,6 @@ void init_variables (int1 source) { // {{{
     store_variables();
     }
 } // }}}
-
 void init_trimpot(void) {//{{{
   set_trimpot(0,0);
   set_trimpot(1,0);
@@ -921,6 +908,7 @@ void initialize (void) { // {{{
   AuxInSW[1] = 0;
   AuxInSW[2] = 0;
   AUX_IN_FLAG = 0;
+  COR_IN_EFFECTIVE=0;
   set_admin_mode(0);
   rs232_mode=0;
   button_state=0;
@@ -928,7 +916,6 @@ void initialize (void) { // {{{
 //  set_adc_channel(13);
 //  printf("\n\rInitialization complete");
 } // }}}
-
 void tokenize_sBuffer() { // {{{
   char verb[8];
   int1 do_get_var=0;
@@ -1055,7 +1042,9 @@ void set_var (void) { // {{{
     printf ("\n\r%s %u",argument,value);
   } else {
     pObj=RegMap[argument].reg_ptr;
-    if ( in_admin_mode() ) {
+    // Consider allowing some registers to be updated outside AdminMode.
+    // Example : AuxOut registers, Enable
+    if ( in_admin_mode() || (pObj==&Enable || (pObj>=&AuxIn[0]&&pObj<=&AuxIn[2]))) {
       *pObj=value;
     }
     lVar = *pObj;
@@ -1092,16 +1081,15 @@ void romstrcpy(char *dest,rom char *src) { // {{{
   }
 } // }}}
 void ExecAuxOutOp(int op,int arg,int ID) { // {{{
-  int cor_in_local;
   char larg,uarg; // Lower and upper nibbles
   larg = arg & 0x0F;
   uarg = (arg & 0xF0) >> 4;
-  cor_in_local = COR_IN | (COR_EMUL&0x0F);
   switch(op) {
     case AUX_OUT_FOLLOW_COR: 
       // Invert AuxIn value if argument 1 is set
-      // Use COR_IN from HW ports here
-      AuxOut[ID] = ((COR_IN ^ uarg) & larg) != 0;
+      // Check what is the effective COR_IN. Many COR_INs can be applied but 
+      // Only one is really effective and used to drive PTTs
+      AuxOut[ID] = ((COR_IN_EFFECTIVE ^ uarg) & larg) != 0;
     break;
     case AUX_OUT_FOLLOW_AUX_IN:
       // Lower argument (larg) enables the comparison (bitwise enable)
@@ -1120,7 +1108,6 @@ char str_to_decimal(char *str) { // {{{
   }
   return(value);
 } // }}}
-
 void ExecAuxInOp(int op,int arg,int ID) { // {{{
   int1 in_bit;
   int1 tmp_bit;
@@ -1168,7 +1155,6 @@ void ExecAuxInOp(int op,int arg,int ID) { // {{{
     break;
   }
 } // }}}
-
 void update_aux_in(void) { // {{{
   int x;
   for(x=0;x<3;x++) {
@@ -1209,8 +1195,6 @@ void update_aux_out(void) { // {{{
   }
   lcd_send(3,LCD_str);
 } // }}}
-
-
 void send_morse_id (void) { // {{{
   int x;
   int mchar;
@@ -1229,7 +1213,6 @@ void send_morse_id (void) { // {{{
   delay_ms(1000);
   COR_FLAG=1;
 } // }}}
-
 void main (void) { // {{{
   int x,dtmf;
   char tmp[5];
@@ -1313,7 +1296,7 @@ void main (void) { // {{{
   // }}}
 #endif
     // Process RS232 Serial Buffer Flag {{{
-    // The sBufferFlag is set when a "#" or a "\r" is received.
+    // The sBufferFlag is set when a "\r" or "+" or "-" is received.
     if ( sBufferFlag ) {
       process_sBuffer();
       clear_sBuffer();
@@ -1366,7 +1349,7 @@ void main (void) { // {{{
         // TXSiteID = <EnableMask[3:0]>,{x,x,M,E}
         // E = Transmit every 30 mins
         // M = Transmit only if EnableMask is off
-        if ( (TXSiteID & 0x01)!=0 || ( (TXSiteID & 0x02)!=0 && ( ((TXSiteID >> 4) & 0x0F) & Enable)==0) ) {
+        if ( (TXSiteID & 0x01)!=0 || ((TXSiteID & 0x02)!=0 && (((TXSiteID >> 4) & 0x0F) & Enable)==0) ) {
           send_morse_id();
         }
       }
@@ -1415,7 +1398,6 @@ void main (void) { // {{{
     }
   } // End of while(1) main loop }}}
 } // }}}
-
 // send_tail {{{
 void send_tail(void) {
   restart_wdt();
@@ -1435,15 +1417,14 @@ void send_tail(void) {
   restart_wdt();
 }
 // send_tail }}}
-
-int1 in_admin_mode(void) {
+int1 in_admin_mode(void) { // {{{
   // Refresh timer
   if (AdminMode) {
     admin_timer = ADMIN_TIMEOUT;
   }
   return(AdminMode||rs232_mode);
-}
-void set_admin_mode(int1 enable) {
+} // }}}
+void set_admin_mode(int1 enable) { // {{{
   AdminMode = (enable!=0);
   if (AdminMode) {
     // Enter Admin mode
@@ -1453,5 +1434,5 @@ void set_admin_mode(int1 enable) {
     // Exit / out of admin mode
     ConfirmChar = MCHAR('o');
   } 
-}
+} // }}}
 
