@@ -1,17 +1,18 @@
 
-#define SITE_ID_VAL  	61
+#define SITE_ID_VAL  	63
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
 #define TOT_MIN 5
+#define LINK_TOT 5
 #define DEFAULT_GAIN 32
 
 #define MORSEID0	MCHAR('v')
-#define MORSEID1	MCHAR('e')
+#define MORSEID1	MCHAR('a')
 #define MORSEID2	2
-#define MORSEID3	MCHAR('m')
-#define MORSEID4	MCHAR('a')
-#define MORSEID5	MCHAR('d')
+#define MORSEID3	MCHAR('c')
+#define MORSEID4	MCHAR('m')
+#define MORSEID5	MCHAR('b')
 
 #define AUXOUTOP0 0
 #define AUXOUTARG0 0
@@ -23,8 +24,8 @@
 //#define AUXINOP0 AUXI_ENABLE
 //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
 // AuxIn1 used by AuxOut 1
-#define AUXINOP0  0
-#define AUXINARG0 0
+#define AUXINOP0  AUXI_TAIL_WHEN_HI
+#define AUXINARG0 MCHAR('b')
 #define AUXINOP1 0
 #define AUXINARG1 0
 #define AUXINOP2  0
