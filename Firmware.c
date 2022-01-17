@@ -1556,7 +1556,7 @@ void process_buttons(void) { // {{{
       pot_values_to_lcd();
       break;
     case TRIM:
-       if ( ((COR_IN|COR_EMUL)&0x0F) != 0 ) {
+       if ( (COR_IN & 0x0F) != 0 ) {
          adj_value_a = read_adc() >> 2;
          if ( adj_value_a != adj_value_b ) {
            rs232_mode = 1;

@@ -244,7 +244,7 @@
    ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
    ³  ³  ÀÄset_admin_mode  1/23  Ram=1
-   ³  ÃÄprocess_buttons  1/176  Ram=3
+   ³  ÃÄprocess_buttons  1/175  Ram=3
    ³  ³  ÃÄpot_values_to_lcd  1/244  Ram=13
    ³  ³  ³  ÃÄ@delay_ms1  0/25  Ram=1
    ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
