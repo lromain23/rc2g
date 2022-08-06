@@ -1,4 +1,4 @@
-#define SITE_ID_VAL  	60
+#define SITE_ID_VAL  	64
 #define LCD_PI 1
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
@@ -6,7 +6,7 @@
 #define TOT_MIN 5
 #define LINK_TOT 0
 #define DEFAULT_GAIN 32
-//#define LCD_TYPE_PI 1
+//#define LCD_TYPE_PI 0
 
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('e')
