@@ -5,9 +5,11 @@ Site ID   Controlleur     Statut      Prix    SHA1
 22        Aubin           Built		0$
 51        Buckingham      Built        80$
 52        Ripon
-60        Developpement   Built
+60        Developpement   ----
 61        VE2MAD          Built         0$
-62        St-Joseph       Built       ----
+62        St-Joseph       Built        80$
 63        VA2CMB-Perso    Built       
+64        EricLaroche-1   Built       150$
+65        EricLaroche-2	  Built       150$
 
 
