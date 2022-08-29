@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               29-Aug-22 17:12
+CCS PCM C Compiler, Version 4.140, 64991               29-Aug-22 19:48
 
-               Filename:   C:\Users\luc\Projects\MBPAB IDE\RC2Gb\60_Master\Firmware.lst
+               Filename:   C:\Users\luc\Projects\MBPAB IDE\RC2Gb\EricLaroche\65\Firmware.lst
 
                ROM used:   8102 words (99%)
                            Largest free fragment is 53
@@ -3256,7 +3256,7 @@ CCS PCM C Compiler, Version 4.140, 64991               29-Aug-22 17:12
 .................... }; 
 ....................  
 .................... #include "SITE_XX.h" 
-.................... #define SITE_ID_VAL  	60 
+.................... #define SITE_ID_VAL  	65 
 .................... #define LCD_PI 1 
 .................... #define SITE_GID_VAL 	90 
 .................... #define POLARITY_DEF_VAL 0x0F  
@@ -3264,14 +3264,14 @@ CCS PCM C Compiler, Version 4.140, 64991               29-Aug-22 17:12
 .................... #define TOT_MIN 5 
 .................... #define LINK_TOT 0 
 .................... #define DEFAULT_GAIN 32 
-.................... //#define LCD_TYPE_PI 1 
+.................... //#define LCD_TYPE_PI 0 
 ....................  
 .................... #define MORSEID0	MCHAR('v') 
-.................... #define MORSEID1	MCHAR('e') 
+.................... #define MORSEID1	MCHAR('a') 
 .................... #define MORSEID2	2 
 .................... #define MORSEID3	MCHAR('r') 
-.................... #define MORSEID4	MCHAR('e') 
-.................... #define MORSEID5	MCHAR('h') 
+.................... #define MORSEID4	MCHAR('t') 
+.................... #define MORSEID5	MCHAR('e') 
 ....................  
 .................... #define AUXOUTOP0 0 
 .................... #define AUXOUTARG0 0 
