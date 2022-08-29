@@ -6,14 +6,14 @@
 #define TOT_MIN 5
 #define LINK_TOT 0
 #define DEFAULT_GAIN 32
-//#define LCD_TYPE_PI 1
+//#define LCD_TYPE_PI 0
 
 #define MORSEID0	MCHAR('v')
-#define MORSEID1	MCHAR('e')
+#define MORSEID1	MCHAR('')
 #define MORSEID2	2
 #define MORSEID3	MCHAR('r')
-#define MORSEID4	MCHAR('e')
-#define MORSEID5	MCHAR('h')
+#define MORSEID4	MCHAR('t')
+#define MORSEID5	MCHAR('e')
 
 #define AUXOUTOP0 0
 #define AUXOUTARG0 0
