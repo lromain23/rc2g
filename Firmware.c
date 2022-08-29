@@ -541,7 +541,7 @@ void process_dtmf(void) { // {{{
   CLEAR_DTMF_FLAG=1;
 } // }}}
 void process_cor (void) { // {{{
-  int cor_mask,cor_index;
+  int cor_mask;
   int rx_priority;
   int cor_in;
   int do_update_ptt;
@@ -1517,7 +1517,11 @@ void do_delay_counters(void) {
 void process_buttons(void) { // {{{
 #ifdef BUTTON_STATES
   char enter_b,select_b;
+  unsigned _cor_in;
+  unsigned int pot_value;
+  unsigned int rx_g_ptr;
   // Process Enter / select buttons {{{
+  _cor_in = (COR_IN | COR_EMUL ) & 0x0F;
   if ( input(ENTER_BUTTON)==0 ) {
     ENTER_PRESSED = (enter_b == DEBOUNCE_COUNT);
     if ( enter_b < DEBOUNCE_COUNT+ 1 ) {
@@ -1553,12 +1557,15 @@ void process_buttons(void) { // {{{
       pot_values_to_lcd();
       break;
     case TRIM:
-       if ( (COR_IN & 0x0F) != 0 ) {
+       if ( _cor_in != 0 ) {
          adj_value_a = read_adc() >> 2;
+         pot_value = 63-adj_value_a;
          if ( adj_value_a != adj_value_b ) {
            rs232_mode = 1;
-           set_trimpot(CurrentTrimPot, 63-adj_value_a);
+           set_trimpot(CurrentTrimPot, pot_value);
            pot_values_to_lcd();
+	   rx_g_ptr = cor_index & 0x03;
+	   RX_GAIN[rx_g_ptr][CurrentTrimPot]=pot_value;
            rs232_mode = 0;
          }
          adj_value_b = adj_value_a;
