@@ -415,7 +415,6 @@ const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 const int AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
-unsigned cor_index;
 
 char const reg_name[][REG_NAME_SIZE]={
 	{"EN"},	  // 0
