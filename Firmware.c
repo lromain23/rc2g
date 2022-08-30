@@ -545,6 +545,7 @@ void process_cor (void) { // {{{
   int rx_priority;
   int cor_in;
   int do_update_ptt;
+  int cor_index;
   int x;
 
   cor_mask=1;
@@ -1519,7 +1520,8 @@ void process_buttons(void) { // {{{
   char enter_b,select_b;
   unsigned _cor_in;
   unsigned int pot_value;
-  unsigned int rx_g_ptr;
+  char CPotPtr;
+  CPotPtr=CurrentTrimPot & 0x03;
   // Process Enter / select buttons {{{
   _cor_in = (COR_IN | COR_EMUL ) & 0x0F;
   if ( input(ENTER_BUTTON)==0 ) {
@@ -1564,8 +1566,7 @@ void process_buttons(void) { // {{{
            rs232_mode = 1;
            set_trimpot(CurrentTrimPot, pot_value);
            pot_values_to_lcd();
-	   rx_g_ptr = cor_index & 0x03;
-	   RX_GAIN[rx_g_ptr][CurrentTrimPot]=pot_value;
+	   RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
            rs232_mode = 0;
          }
          adj_value_b = adj_value_a;

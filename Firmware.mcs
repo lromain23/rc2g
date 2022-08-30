@@ -5,13 +5,13 @@ Version=1.0
 Location=C:\Users\luc\Projects\MBPAB IDE\RC2Gb\EricLaroche\65\Firmware.o
 Folder=Intermediary
 [File001]
-Location=Firmware.ERR
-Folder=Output
-[File002]
 Location=Firmware.HEX
 Folder=Output
-[File003]
+[File002]
 Location=Firmware.LST
+Folder=Output
+[File003]
+Location=Firmware.ERR
 Folder=Output
 [File004]
 Location=Firmware.COF
