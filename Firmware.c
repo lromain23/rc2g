@@ -472,7 +472,12 @@ void process_dtmf(void) { // {{{
   // Change to pot 4        : 52 02 55 3 #
   // Increment POT 01 by 3  : 52 06 01 3 #
   // Decrement POT 03 by 4  : 52 07 03 4 #
+  // -- User Functions --
+  // Disable AuxOut0        : 51 02 21 0 # 
+  // Disable AuxOut0 (!Arg) : 51 02 21 # 
+  // Enable  AuxOut1        : 51 02 22 1 #
   command=0;
+  value=0;
   if ( ValidKeyRange(0,3)) {
     site_id = DTMF_ARRAY[0].Key *10 + DTMF_ARRAY[1].Key;
     command = DTMF_ARRAY[2].Key * 10 + DTMF_ARRAY[3].Key;

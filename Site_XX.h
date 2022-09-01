@@ -35,7 +35,7 @@
 #define PO_AUX_OUT1 1
 #define PO_AUX_OUT2 1
 
-#define RX1_PTT 0x0F
-#define RX2_PTT 0x0F
-#define RX3_PTT 0x0F
-#define RX4_PTT 0x0F
+#define RX1_PTT 0x0E
+#define RX2_PTT 0x0D
+#define RX3_PTT 0x0B
+#define RX4_PTT 0x07
