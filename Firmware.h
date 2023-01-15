@@ -24,6 +24,13 @@
 #define BUTTON_STATES
 #define POT_MAX 63
 
+#define RS 0x01
+#define LCD_READ 0x02  
+#define LCD_WRITE 0x00  
+#define E 0x04
+#define BT 0x08
+#define CHANGE_LINE 0x80
+
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
@@ -37,6 +44,7 @@
 //function headers
 char str_to_decimal(char *str);
 void process_dtmf_interrupt(void);
+void init_lcd(void);
 void send_tail(void);
 void status_led(void);
 void morse(char);
@@ -55,6 +63,9 @@ void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
 void update_aux_in(void);
 void update_aux_out(void);
+void print_dfmf_info(void);
+void do_delay_counters(void);
+void process_buttons(void);
 int1 my_stricmp(char *, char *);
 
 // Variables accessed using linear addressing {{{
@@ -67,7 +78,8 @@ unsigned int Morse[6];
 unsigned int AuxOutOp[3],AuxOutArg[3];
 unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int COR_IN;
-unsigned int Enable,Enable_Mask;
+unsigned int Enable;
+unsigned int Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID,TXSiteID;
 unsigned int Tail;
@@ -174,11 +186,6 @@ char admin_timer;
 //
 #define TRIMPOT_READ_CMD  0x51
 #define TRIMPOT_WRITE_CMD 0x50
-#define LCD_I2C_ADD 0x60
-#define LCD_LINE1 0x60
-#define LCD_LINE2 0x62
-#define LCD_LINE3 0x64
-#define LCD_LINE4 0x66
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
 unsigned long aux_timer;
@@ -471,6 +478,15 @@ char const reg_name[][REG_NAME_SIZE]={
 
 #include "SITE_XX.h"
 // Define default variables {{{
+#ifdef LCD_TYPE_PI
+  #define LCD_I2C_ADD 0x27
+#else
+  #define LCD_I2C_ADD 0x60
+#endif
+#define LCD_LINE1 0x60
+#define LCD_LINE2 0x62
+#define LCD_LINE3 0x64
+#define LCD_LINE4 0x66
 #ifndef RX1_PTT
   #define RX1_PTT 0x0E
 #endif
@@ -516,9 +532,9 @@ struct sRegMap_t const RegMap[]={
 	{&AuxIn[0]      ,0               , EEPROM,PUBLIC},
 	{&AuxIn[1]      ,0               , EEPROM,PUBLIC},
 	{&AuxIn[2]      ,0               , EEPROM,PUBLIC},
-	{&AuxOut[0]     ,0               , EEPROM,PROTECTED},
-	{&AuxOut[1]     ,0               , EEPROM,PROTECTED},
-	{&AuxOut[2]     ,0               , EEPROM,PROTECTED},
+	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC},
+	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC},
+	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC},
 	{&RXPriority[0] ,4               , EEPROM,PROTECTED},
 	{&RXPriority[1] ,6               , EEPROM,PROTECTED},
 	{&RXPriority[2] ,6               , EEPROM,PROTECTED},
