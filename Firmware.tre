@@ -1,5 +1,5 @@
 ÀÄFirmware
-   ÃÄmain  3/125  Ram=0
+   ÃÄmain  3/123  Ram=0
    ³  ÃÄ@cinit1  (Inline)  Ram=0
    ³  ÃÄinitialize  1/214  Ram=0
    ³  ³  ÃÄclear_sBuffer  0/26  Ram=4
@@ -35,7 +35,7 @@
    ³  ³  ³  ÀÄdtmf_read  0/25  Ram=2
    ³  ³  ÃÄheader  0/1  Ram=0
    ³  ³  ÃÄinit_trimpot  (Inline)  Ram=0
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -49,7 +49,7 @@
    ³  ³  ³  ³  ÀÄ@PRINTF_U_9600_118_119  0/79  Ram=2
    ³  ³  ³  ³     ÃÄ@DIV88  0/23  Ram=3
    ³  ³  ³  ³     ÀÄ@DIV88  0/23  Ram=3
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -63,7 +63,7 @@
    ³  ³  ³  ³  ÀÄ@PRINTF_U_9600_118_119  0/79  Ram=2
    ³  ³  ³  ³     ÃÄ@DIV88  0/23  Ram=3
    ³  ³  ³  ³     ÀÄ@DIV88  0/23  Ram=3
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -77,7 +77,7 @@
    ³  ³  ³  ³  ÀÄ@PRINTF_U_9600_118_119  0/79  Ram=2
    ³  ³  ³  ³     ÃÄ@DIV88  0/23  Ram=3
    ³  ³  ³  ³     ÀÄ@DIV88  0/23  Ram=3
-   ³  ³  ³  ÀÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÀÄset_trimpot  0/116  Ram=5
    ³  ³  ³     ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³     ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -154,7 +154,7 @@
    ³  ³  ³  ÃÄ@const493  0/5  Ram=0
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -244,7 +244,7 @@
    ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
    ³  ³  ÀÄset_admin_mode  1/23  Ram=1
-   ³  ÃÄprocess_buttons  1/175  Ram=3
+   ³  ÃÄprocess_buttons  1/200  Ram=7
    ³  ³  ÃÄpot_values_to_lcd  1/244  Ram=13
    ³  ³  ³  ÃÄ@delay_ms1  0/25  Ram=1
    ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
@@ -301,7 +301,7 @@
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -502,7 +502,7 @@
    ³  ³  ÃÄmy_stricmp  1/40  Ram=6
    ³  ³  ÃÄ@const574  0/9  Ram=0
    ³  ³  ÃÄmy_stricmp  1/40  Ram=6
-   ³  ³  ÀÄexecute_command  2/1147  Ram=16
+   ³  ³  ÀÄexecute_command  2/1139  Ram=16
    ³  ³     ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
    ³  ³     ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -528,7 +528,7 @@
    ³  ³     ³  ³  ÀÄ@DIV88  0/23  Ram=3
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
-   ³  ³     ³  ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³     ³  ÃÄin_admin_mode  2/15  Ram=0
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
    ³  ³     ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ÃÄ@PSTRINGR_9600_118_119  1/26  Ram=2
@@ -539,9 +539,9 @@
    ³  ³     ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
    ³  ³     ³  ³  ÃÄ@DIV88  0/23  Ram=3
    ³  ³     ³  ³  ÀÄ@DIV88  0/23  Ram=3
-   ³  ³     ³  ÀÄincrement  2/65  Ram=7
-   ³  ³     ³     ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³     ³     ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ³  ÀÄincrement  2/67  Ram=7
+   ³  ³     ³     ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³     ³     ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³     ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³     ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -648,14 +648,14 @@
    ³  ³     ÃÄprompt  2/24  Ram=0
    ³  ³     ³  ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
    ³  ³     ³  ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³     ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³     ÃÄin_admin_mode  2/15  Ram=0
    ³  ³     ÃÄstore_variables  0/123  Ram=7
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
    ³  ³     ³  ÃÄ@const506  0/229  Ram=0
    ³  ³     ³  ÃÄupdate_checksum  0/24  Ram=6
    ³  ³     ³  ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³     ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³     ÃÄin_admin_mode  2/15  Ram=0
    ³  ³     ÃÄinit_variables  0/21  Ram=1
    ³  ³     ³  ÃÄ_init_variables  0/134  Ram=11
    ³  ³     ³  ³  ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
@@ -680,9 +680,9 @@
    ³  ³     ³     ÃÄ@const506  0/229  Ram=0
    ³  ³     ³     ÃÄupdate_checksum  0/24  Ram=6
    ³  ³     ³     ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³     ÃÄincrement  2/65  Ram=7
-   ³  ³     ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³     ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ÃÄincrement  2/67  Ram=7
+   ³  ³     ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³     ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -753,9 +753,9 @@
    ³  ³     ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
    ³  ³     ÃÄ@MUL88  1/39  Ram=2
-   ³  ³     ÃÄincrement  2/65  Ram=7
-   ³  ³     ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³     ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ÃÄincrement  2/67  Ram=7
+   ³  ³     ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³     ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -916,7 +916,7 @@
    ³  ³     ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³     ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³     ÃÄin_admin_mode  2/15  Ram=0
    ³  ³     ÃÄset_admin_mode  1/23  Ram=1
    ³  ³     ÃÄsend_morse_id  2/66  Ram=3
    ³  ³     ³  ÃÄupdate_ptt  1/340  Ram=19
@@ -982,7 +982,7 @@
    ³  ³     ³  ³  ÃÄ@const493  0/5  Ram=0
    ³  ³     ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³     ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³     ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1167,7 +1167,7 @@
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ³  ÃÄExecAuxInOp  2/100  Ram=5
-   ³  ³  ³  ³  ÀÄ@goto12611  2/8  Ram=0
+   ³  ³  ³  ³  ÀÄ@goto12615  2/8  Ram=0
    ³  ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ³  ÃÄ@PSTRINGR_553  1/21  Ram=2
@@ -1249,7 +1249,7 @@
    ³  ³  ³  ÃÄ@const493  0/5  Ram=0
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1405,7 +1405,7 @@
    ³  ³     ³  ÃÄ@const493  0/5  Ram=0
    ³  ³     ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³     ³  ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³     ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1587,7 +1587,7 @@
    ³  ³     ÃÄ@const493  0/5  Ram=0
    ³  ³     ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³     ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³     ÃÄset_trimpot  0/107  Ram=5
+   ³  ³     ÃÄset_trimpot  0/116  Ram=5
    ³  ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³     ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1682,7 +1682,7 @@
    ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ÃÄExecAuxInOp  2/100  Ram=5
-   ³  ³  ³  ÀÄ@goto12611  2/8  Ram=0
+   ³  ³  ³  ÀÄ@goto12615  2/8  Ram=0
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ÃÄ@PSTRINGR_553  1/21  Ram=2
@@ -1727,7 +1727,7 @@
    ³  ³     ³  ÀÄ@DIV88  0/23  Ram=3
    ³  ³     ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³     ÀÄ@I2C_WRITEU_1  0/21  Ram=1
-   ³  ÃÄprocess_dtmf  3/243  Ram=4
+   ³  ÃÄprocess_dtmf  3/244  Ram=4
    ³  ³  ÃÄValidKeyRange  2/49  Ram=5
    ³  ³  ÃÄ@MUL88  1/39  Ram=2
    ³  ³  ÃÄ@MUL88  1/39  Ram=2
@@ -1735,7 +1735,7 @@
    ³  ³  ÃÄ@MUL88  1/39  Ram=2
    ³  ³  ÃÄValidKey  (Inline)  Ram=3
    ³  ³  ÃÄ@MUL88  1/39  Ram=2
-   ³  ³  ÃÄexecute_command  2/1147  Ram=16
+   ³  ³  ÃÄexecute_command  2/1139  Ram=16
    ³  ³  ³  ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
    ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1761,7 +1761,7 @@
    ³  ³  ³  ³  ³  ÀÄ@DIV88  0/23  Ram=3
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
-   ³  ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PSTRINGR_9600_118_119  1/26  Ram=2
@@ -1772,9 +1772,9 @@
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
    ³  ³  ³  ³  ³  ÃÄ@DIV88  0/23  Ram=3
    ³  ³  ³  ³  ³  ÀÄ@DIV88  0/23  Ram=3
-   ³  ³  ³  ³  ÀÄincrement  2/65  Ram=7
-   ³  ³  ³  ³     ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³  ³  ³     ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ³  ÀÄincrement  2/67  Ram=7
+   ³  ³  ³  ³     ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³  ³  ³     ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³     ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³     ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1881,14 +1881,14 @@
    ³  ³  ³  ÃÄprompt  2/24  Ram=0
    ³  ³  ³  ³  ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
    ³  ³  ³  ³  ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
    ³  ³  ³  ÃÄstore_variables  0/123  Ram=7
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³  ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³  ÃÄupdate_checksum  0/24  Ram=6
    ³  ³  ³  ³  ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
    ³  ³  ³  ÃÄinit_variables  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ_init_variables  0/134  Ram=11
    ³  ³  ³  ³  ³  ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
@@ -1913,9 +1913,9 @@
    ³  ³  ³  ³     ÃÄ@const506  0/229  Ram=0
    ³  ³  ³  ³     ÃÄupdate_checksum  0/24  Ram=6
    ³  ³  ³  ³     ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
-   ³  ³  ³  ÃÄincrement  2/65  Ram=7
-   ³  ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄincrement  2/67  Ram=7
+   ³  ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -1986,9 +1986,9 @@
    ³  ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
    ³  ³  ³  ÃÄ@MUL88  1/39  Ram=2
-   ³  ³  ³  ÃÄincrement  2/65  Ram=7
-   ³  ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ÃÄincrement  2/67  Ram=7
+   ³  ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -2149,7 +2149,7 @@
    ³  ³  ³  ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
+   ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
    ³  ³  ³  ÃÄset_admin_mode  1/23  Ram=1
    ³  ³  ³  ÃÄsend_morse_id  2/66  Ram=3
    ³  ³  ³  ³  ÃÄupdate_ptt  1/340  Ram=19
@@ -2215,7 +2215,7 @@
    ³  ³  ³  ³  ³  ÃÄ@const493  0/5  Ram=0
    ³  ³  ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
    ³  ³  ³  ³  ³  ÃÄ@WRITEBITA  1/34  Ram=6
-   ³  ³  ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -2445,9 +2445,9 @@
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³  ÃÄincrement  2/65  Ram=7
-   ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ÃÄincrement  2/67  Ram=7
+   ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -2517,9 +2517,9 @@
    ³  ³  ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³  ÃÄincrement  2/65  Ram=7
-   ³  ³  ³  ÃÄin_admin_mode  1/15  Ram=0
-   ³  ³  ³  ÃÄset_trimpot  0/107  Ram=5
+   ³  ³  ÃÄincrement  2/67  Ram=7
+   ³  ³  ³  ÃÄin_admin_mode  2/15  Ram=0
+   ³  ³  ³  ÃÄset_trimpot  0/116  Ram=5
    ³  ³  ³  ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³  ³  ÃÄ@PSTRINGCN7_9600_118_119  0/93  Ram=5
    ³  ³  ³  ³  ÃÄ@PRINTF_U_9600_118_119  0/79  Ram=2
@@ -2589,8 +2589,8 @@
    ³  ³  ³     ³  ÃÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ³  ÀÄ@I2C_WRITEU_1  0/21  Ram=1
    ³  ³  ³     ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ³  ÀÄin_admin_mode  1/15  Ram=0
-   ³  ÃÄclear_dtmf_array  2/23  Ram=3
+   ³  ³  ÀÄin_admin_mode  2/15  Ram=0
+   ³  ÃÄclear_dtmf_array  3/23  Ram=3
    ³  ÀÄprompt  2/24  Ram=0
    ³     ÃÄ@PSTRINGC7_9600_118_119  0/85  Ram=4
    ³     ÀÄ@PSTRINGC7_9600_118_119  0/85  Ram=4

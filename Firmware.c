@@ -298,12 +298,12 @@ void set_trimpot(pot,value) { // {{{
   i2c_start();
   ack=i2c_write(TRIMPOT_WRITE_CMD);
   if ( ack != 0) {
-    printf("\n\rI2C : No ACK : %u",ack);
+    printf("\n\rI2C : No ACK : %u\n",ack);
+  } else {
+    i2c_write(tx_value);
+    i2c_stop();  
+    printf("\n\rPot(%u)<=%u",pot,value);
   }
-  i2c_write(tx_value);
-  i2c_stop();  
-  printf("\n\rPot(%u)<=%u",pot,value);
-
 } // }}}
 void morse (int c) { // {{{
   int mc;
@@ -472,7 +472,12 @@ void process_dtmf(void) { // {{{
   // Change to pot 4        : 52 02 55 3 #
   // Increment POT 01 by 3  : 52 06 01 3 #
   // Decrement POT 03 by 4  : 52 07 03 4 #
+  // -- User Functions --
+  // Disable AuxOut0        : 51 02 21 0 # 
+  // Disable AuxOut0 (!Arg) : 51 02 21 # 
+  // Enable  AuxOut1        : 51 02 22 1 #
   command=0;
+  value=0;
   if ( ValidKeyRange(0,3)) {
     site_id = DTMF_ARRAY[0].Key *10 + DTMF_ARRAY[1].Key;
     command = DTMF_ARRAY[2].Key * 10 + DTMF_ARRAY[3].Key;
@@ -541,10 +546,11 @@ void process_dtmf(void) { // {{{
   CLEAR_DTMF_FLAG=1;
 } // }}}
 void process_cor (void) { // {{{
-  int cor_mask,cor_index;
+  int cor_mask;
   int rx_priority;
   int cor_in;
   int do_update_ptt;
+  int cor_index;
   int x;
 
   cor_mask=1;
@@ -1520,7 +1526,12 @@ void do_delay_counters(void) {
 void process_buttons(void) { // {{{
 #ifdef BUTTON_STATES
   char enter_b,select_b;
+  unsigned _cor_in;
+  unsigned int pot_value;
+  char CPotPtr;
+  CPotPtr=CurrentTrimPot & 0x03;
   // Process Enter / select buttons {{{
+  _cor_in = (COR_IN | COR_EMUL ) & 0x0F;
   if ( input(ENTER_BUTTON)==0 ) {
     ENTER_PRESSED = (enter_b == DEBOUNCE_COUNT);
     if ( enter_b < DEBOUNCE_COUNT+ 1 ) {
@@ -1556,12 +1567,14 @@ void process_buttons(void) { // {{{
       pot_values_to_lcd();
       break;
     case TRIM:
-       if ( (COR_IN & 0x0F) != 0 ) {
+       if ( _cor_in != 0 ) {
          adj_value_a = read_adc() >> 2;
+         pot_value = 63-adj_value_a;
          if ( adj_value_a != adj_value_b ) {
            rs232_mode = 1;
-           set_trimpot(CurrentTrimPot, 63-adj_value_a);
+           set_trimpot(CurrentTrimPot, pot_value);
            pot_values_to_lcd();
+	   RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
            rs232_mode = 0;
          }
          adj_value_b = adj_value_a;
