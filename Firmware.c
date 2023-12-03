@@ -981,6 +981,9 @@ void initialize (void) { // {{{
   PROMPT_FLAG=1;
   TailChar=Tail;
   ConfirmChar=0;
+  //AuxOut[0] = PO_AUX_OUT0;
+  //AuxOut[1] = PO_AUX_OUT1;
+  //AuxOut[2] = PO_AUX_OUT2;
   AuxInSW[0] = 0;
   AuxInSW[1] = 0;
   AuxInSW[2] = 0;
