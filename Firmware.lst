@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               01-Sep-22 14:40
+CCS PCM C Compiler, Version 4.140, 64991               03-Dec-23 12:04
 
-               Filename:   C:\Users\luc\Projects\MBPAB IDE\RC2Gb\60_Master\Firmware.lst
+               Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\53_VE2REH\Firmware.lst
 
                ROM used:   8107 words (99%)
                            Largest free fragment is 52
@@ -3255,7 +3255,7 @@ CCS PCM C Compiler, Version 4.140, 64991               01-Sep-22 14:40
 .................... }; 
 ....................  
 .................... #include "SITE_XX.h" 
-.................... #define SITE_ID_VAL  	60 
+.................... #define SITE_ID_VAL  	53 
 .................... #define SITE_GID_VAL 	90 
 .................... #define POLARITY_DEF_VAL 0x0F  
 .................... #define ENABLE_DEFAULT 15 
@@ -5488,7 +5488,8 @@ CCS PCM C Compiler, Version 4.140, 64991               01-Sep-22 14:40
 ....................   // Increment POT 01 by 3  : 52 06 01 3 # 
 ....................   // Decrement POT 03 by 4  : 52 07 03 4 # 
 ....................   // -- User Functions -- 
-....................   // Disable AuxOut0        : 51 02 21 0 # 
+....................   // Disable AuxOut0        : 51 02 21 0 #  
+....................   // Disable AuxOut0 (!Arg) : 51 02 21 #  
 ....................   // Enable  AuxOut1        : 51 02 22 1 # 
 ....................   command=0; 
 *
@@ -7870,6 +7871,9 @@ CCS PCM C Compiler, Version 4.140, 64991               01-Sep-22 14:40
 0D62:  MOVWF  6A
 ....................   ConfirmChar=0; 
 0D63:  CLRF   6B
+....................   //AuxOut[0] = PO_AUX_OUT0; 
+....................   //AuxOut[1] = PO_AUX_OUT1; 
+....................   //AuxOut[2] = PO_AUX_OUT2; 
 ....................   AuxInSW[0] = 0; 
 0D64:  CLRF   3F
 ....................   AuxInSW[1] = 0; 

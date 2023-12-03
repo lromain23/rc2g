@@ -1,4 +1,4 @@
-#define SITE_ID_VAL  	60
+#define SITE_ID_VAL  	53
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
