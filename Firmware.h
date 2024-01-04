@@ -21,6 +21,15 @@
 #define SEC_COUNTER 59
 #define TAIL_CHAR 0
 
+#define POT_MAX 63
+
+#define RS 0x01
+#define LCD_READ 0x02  
+#define LCD_WRITE 0x00  
+#define E 0x04
+#define BT 0x08
+#define CHANGE_LINE 0x80
+
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
@@ -31,6 +40,8 @@
 
 //function headers
 char str_to_decimal(char *str);
+void process_dtmf_interrupt(void);
+void init_lcd(void);
 void send_tail(void);
 void morse(char);
 void dit(void);
@@ -48,6 +59,9 @@ void dtmf_send_digit(int);
 void romstrcpy(char *,rom char *);
 void update_aux_in(void);
 void update_aux_out(void);
+void print_dfmf_info(void);
+void do_delay_counters(void);
+int1 my_stricmp(char *, char *);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
@@ -59,12 +73,16 @@ unsigned int Morse[6];
 unsigned int AuxOutOp[3],AuxOutArg[3];
 unsigned int AuxInOp[3],AuxInArg[3];
 unsigned int COR_IN;
-unsigned int Enable,Enable_Mask;
+unsigned int Enable;
+unsigned int Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID,TXSiteID;
 unsigned int Tail;
 unsigned int TOT_Min;
+unsigned int TOT_FLAG_Mask;
+unsigned int Link_TOT,LinkDurationTimer;
 unsigned int COR_EMUL;
+unsigned int COR_AUX;
 unsigned int TailChar;
 unsigned int ConfirmChar;
 // Variables accessed using linear addressing }}}
@@ -73,6 +91,7 @@ unsigned int ConfirmChar;
 unsigned int CurrentCorMask;
 unsigned int CurrentCorIndex;
 unsigned int CurrentCorPriority;
+char COR_IN_EFFECTIVE;
 // }}}
 
 // RS232 variables / buffers {{{
@@ -85,6 +104,7 @@ unsigned int1 sBufferFlag;
 #define ESC 0x1B
 
 // Commands
+#define LINK_CMD 1
 #define SET_REG 2
 #define GET_REG 3
 #define SAVE_SETTINGS 4
@@ -93,14 +113,13 @@ unsigned int1 sBufferFlag;
 #define DECREMENT_REG 7
 #define STATUS    8
 #define ADMIN     9
-#define ADMIN_TIMEOUT 240 
+#define ADMIN_TIMEOUT 255
 char admin_timer;
 // Admin args:
 #define IDLE          0
 #define ENTER_ADMIN   1
 #define REBOOT        2
 #define SEND_MORSE_ID 3
-//#define DTMF_SEND_OLD 10
 #define MORSE_SEND 11
 #define I2C_SEND 12
 
@@ -109,14 +128,14 @@ char admin_timer;
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
 // Follow COR args:
-#define AUX_OUT_FOLLOW_COR0 0x01
-#define AUX_OUT_FOLLOW_COR1 0x02
-#define AUX_OUT_FOLLOW_COR2 0x04
-#define AUX_OUT_FOLLOW_COR3 0x08
-#define AUX_OUT_FOLLOW_COR_INVERT0 0x10
-#define AUX_OUT_FOLLOW_COR_INVERT1 0x20
-#define AUX_OUT_FOLLOW_COR_INVERT2 0x40
-#define AUX_OUT_FOLLOW_COR_INVERT3 0x80
+#define AUX_OUT_FOLLOW_COR1 0x01
+#define AUX_OUT_FOLLOW_COR2 0x02
+#define AUX_OUT_FOLLOW_COR3 0x04
+#define AUX_OUT_FOLLOW_COR4 0x08
+#define AUX_OUT_FOLLOW_COR_INVERT1 0x10
+#define AUX_OUT_FOLLOW_COR_INVERT2 0x20
+#define AUX_OUT_FOLLOW_COR_INVERT3 0x40
+#define AUX_OUT_FOLLOW_COR_INVERT4 0x80
 // Follow AUX_IN args:
 #define AUX_OUT_FOLLOW_AUX_IN0 0x01
 #define AUX_OUT_FOLLOW_AUX_IN0_INV 0x11
@@ -142,22 +161,17 @@ char admin_timer;
 #define AUXI_TAIL_CHAR MCHAR('s')
 
 #define AUXI_EMULATE_COR 0x04
-#define AUXI_EMULATE_COR_ACTIVE_LO 0x10
-#define AUXI_EMULATE_COR0 0x01
-#define AUXI_EMULATE_COR1 0x02
-#define AUXI_EMULATE_COR2 0x04
-#define AUXI_EMULATE_COR3 0x08
-
+#define AUXI_EMULATE_COR1 0x01
+#define AUXI_EMULATE_COR2 0x02
+#define AUXI_EMULATE_COR3 0x04
+#define AUXI_EMULATE_COR4 0x08
+#define AUXI_EMULATE_COR5 0x10 // COR from AUX only for DTMF control (No audio feed-thru)
+#define AUXI_EMULATE_COR_ACTIVE_LO 0x20
 
 // Digital TrimPot
 //
 #define TRIMPOT_READ_CMD  0x51
 #define TRIMPOT_WRITE_CMD 0x50
-#define LCD_I2C_ADD 0x60
-#define LCD_LINE1 0x60
-#define LCD_LINE2 0x62
-#define LCD_LINE3 0x64
-#define LCD_LINE4 0x66
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
 unsigned long aux_timer;
@@ -212,7 +226,7 @@ typedef struct {
 } sCOR;
 
 #define REG_NAME_SIZE 6
-char command,argument,value;
+unsigned int command,argument,value;
 #LOCATE command=0x070
 char argument_name[REG_NAME_SIZE];
 #define LCD_STR_SIZE 21
@@ -225,6 +239,7 @@ unsigned int  LastRegisterIndexValid;
 
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
+#define MORSE_CHAR_ARRAY_LENGTH 37
 unsigned int rom cMorseChar[] = {
 	0b10101010, // 0 (dah dah dah dah dah)	0
 	0b01101010, // 1 (dit dah dah dah dah)	1
@@ -261,14 +276,15 @@ unsigned int rom cMorseChar[] = {
 	0b01101000, // w (dit dah dah)		32
 	0b10010110, // x (dah dit dit dah)	33
 	0b10011010, // y (dah dit dah dah)	34
-	0b10100101 // z (dah dah dit dit)	35
+	0b10100101, // z (dah dah dit dit)	35
+	0b00000000  // - (silence)	36
 }; // }}}
 
 typedef struct sRegMap_t { 
-//	int      reg_name_index;
 	int *	 reg_ptr;
 	int	 default_value;
 	int	 non_volatile : 1;
+  int  usage : 1;
 };
 
 int dtmf_read(int1 rs);
@@ -287,6 +303,7 @@ int        SecondCounter,MinuteCounter;
 unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
+int1       DTMF_INTERRUPT_FLAG;
 int1	     CLEAR_DTMF_FLAG;
 int1       PROMPT_FLAG;
 int1       AdminMode;
@@ -295,12 +312,20 @@ int1       rs232_mode;
 // Source is used by init_variables
 // EEPROM -- Initializes variables using values stored in EEPROM
 // DEFAULT -- Initializes variables using values in ROM
-#define PTT_TIMEOUT_SECS 60
+// PROTECTED -- Must be in admin mode to set value
+// PUBLIC    -- Register can be set in any mode
 #define USE_EEPROM_VARS 1
 #define USE_DEFAULT_VARS 0
 #define EEPROM   1
 #define RAM      0
+#define PROTECTED 1
+#define PUBLIC    0
 
+#define ENTER_BUTTON   PIN_A7
+#define SELECT_BUTTON   PIN_E3
+#define STATUS_LED_PIN PIN_A6
+// RB
+#define ADJ_POT	 sAN13
 #define DTMF_D0  PIN_D0
 #define DTMF_D1  PIN_D1
 #define DTMF_D2  PIN_D2
@@ -356,6 +381,8 @@ int1       rs232_mode;
 #define COR2_MASK 0x04
 #define COR3_MASK 0x08
 #define DTMF_INT_MASK 0x10
+// WPUE must be set to 0
+#bit  WPUEN = 0x095.7
 #byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
 
@@ -365,16 +392,6 @@ int1       rs232_mode;
 
 //rom char * rom strPtr=COR_IN_NAME;
 
-#ifndef GAIN
-  #define DEFAULT_GAIN 32
-#endif
-#ifndef POLARITY_DEF_VAL
-  #define POLARITY_DEF_VAL 0x0F
-#endif
-// ENABLE_DEFAULT <Morse Enable [3:0]>,<COR_ENABLE[3:0]>
-#ifndef ENABLE_DEFAULT
-  #define ENABLE_DEFAULT 0x0F
-#endif
 const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
 const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
@@ -435,69 +452,101 @@ char const reg_name[][REG_NAME_SIZE]={
     {"XIA3"}, // 51
     {"TAIL"}, // 52
     {"TOT"},  // 53
-    {"COR"},  // 54
-    {"CPOT"}  // 55
+    {"LTO"},  // 54
+    {"COR"},  // 55
+    {"CPOT"}  // 56
 };
 
 #include "SITE_XX.h"
-
+// Define default variables {{{
+#ifdef LCD_TYPE_PI
+  #define LCD_I2C_ADD 0x27
+#else
+  #define LCD_I2C_ADD 0x60
+#endif
+#define LCD_LINE1 0x60
+#define LCD_LINE2 0x62
+#define LCD_LINE3 0x64
+#define LCD_LINE4 0x66
+#ifndef RX1_PTT
+  #define RX1_PTT 0x0E
+#endif
+#ifndef RX2_PTT
+  #define RX2_PTT 0x0D
+#endif
+#ifndef RX3_PTT
+  #define RX3_PTT 0x0B 
+#endif
+#ifndef RX4_PTT
+  #define RX4_PTT 0x07
+#endif
+#ifndef DEFAULT_GAIN
+  #define DEFAULT_GAIN 32
+#endif
+#ifndef POLARITY_DEF_VAL
+  #define POLARITY_DEF_VAL 0x0F
+#endif
+#ifndef ENABLE_DEFAULT
+  #define ENABLE_DEFAULT 0x0F
+#endif
 struct sRegMap_t const RegMap[]={
-	{&Enable        ,ENABLE_DEFAULT,EEPROM},
-	{&Polarity      ,POLARITY_DEF_VAL,EEPROM},
-	{&RX_GAIN[0][0] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[0][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[0][2] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[0][3] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[1][0] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[1][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[1][2] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[1][3] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[2][0] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[2][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[2][2] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[2][3] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[3][0] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[3][1] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[3][2] ,DEFAULT_GAIN, EEPROM},
-	{&RX_GAIN[3][3] ,DEFAULT_GAIN, EEPROM},
-	{&AuxIn[0]      ,0           , EEPROM},
-	{&AuxIn[1]      ,0           , EEPROM},
-	{&AuxIn[2]      ,0           , EEPROM},
-	{&AuxOut[0]     ,0           , EEPROM},
-	{&AuxOut[1]     ,0           , EEPROM},
-	{&AuxOut[2]     ,0           , EEPROM},
-	{&RXPriority[0] ,2           , EEPROM},
-	{&RXPriority[1] ,6           , EEPROM},
-	{&RXPriority[2] ,4           , EEPROM},
-	{&RXPriority[3] ,4           , EEPROM},
-	{&RX_PTT[0]     ,0x0E        , EEPROM},
-	{&RX_PTT[1]     ,0x0D        , EEPROM},
-	{&RX_PTT[2]     ,0x0B        , EEPROM},
-	{&RX_PTT[3]     ,0x07        , EEPROM},
-	{&SiteID        ,SITE_ID_VAL , EEPROM},
-	{&TXSiteID      ,0x12        , EEPROM},
-  {&Morse[0]      ,MCHAR('v')  , EEPROM},
-  {&Morse[1]      ,MCHAR('e')  , EEPROM},
-  {&Morse[2]      ,2           , EEPROM},
-  {&Morse[3]      ,MCHAR('r')  , EEPROM},
-  {&Morse[4]      ,MCHAR('e')  , EEPROM},
-  {&Morse[5]      ,MCHAR('h')  , EEPROM},
-	{&AuxOutOp[0]   ,AUXOUTOP0   , EEPROM},
-	{&AuxOutOp[1]   ,AUXOUTOP1   , EEPROM},
-	{&AuxOutOp[2]   ,AUXOUTOP2   , EEPROM},
-	{&AuxOutArg[0]  ,AUXOUTARG0  , EEPROM},
-	{&AuxOutArg[1]  ,AUXOUTARG1  , EEPROM},
-	{&AuxOutArg[2]  ,AUXOUTARG2  , EEPROM},
-	{&AuxInOp[0]    ,AUXINOP0    , EEPROM},
-	{&AuxInOp[1]    ,AUXINOP1    , EEPROM},
-	{&AuxInOp[2]    ,AUXINOP2    , EEPROM},
-	{&AuxInArg[0]   ,AUXINARG0   , EEPROM},
-	{&AuxInArg[1]   ,AUXINARG1   , EEPROM},
-	{&AuxInArg[2]   ,AUXINARG2   , EEPROM},
-  {&Tail          ,TAIL_CHAR   , EEPROM},
-  {&TOT_Min       ,TOT_MIN     , EEPROM},
-	{&COR_EMUL      ,0x00        , RAM},
-	{&CurrentTrimPot,0x00        , RAM},
+	{&Enable        ,ENABLE_DEFAULT  , EEPROM,PUBLIC},
+	{&Polarity      ,POLARITY_DEF_VAL, EEPROM,PROTECTED},
+	{&RX_GAIN[0][0] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[0][1] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[0][2] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[0][3] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[1][0] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[1][1] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[1][2] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[1][3] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[2][0] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[2][1] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[2][2] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[2][3] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[3][0] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[3][1] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[3][2] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&RX_GAIN[3][3] ,DEFAULT_GAIN    , EEPROM,PROTECTED},
+	{&AuxIn[0]      ,0               , EEPROM,PUBLIC},
+	{&AuxIn[1]      ,0               , EEPROM,PUBLIC},
+	{&AuxIn[2]      ,0               , EEPROM,PUBLIC},
+	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC},
+	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC},
+	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC},
+	{&RXPriority[0] ,4               , EEPROM,PROTECTED},
+	{&RXPriority[1] ,6               , EEPROM,PROTECTED},
+	{&RXPriority[2] ,6               , EEPROM,PROTECTED},
+	{&RXPriority[3] ,2               , EEPROM,PROTECTED},
+	{&RX_PTT[0]     ,RX1_PTT         , EEPROM,PROTECTED},
+	{&RX_PTT[1]     ,RX2_PTT         , EEPROM,PROTECTED},
+	{&RX_PTT[2]     ,RX3_PTT         , EEPROM,PROTECTED},
+	{&RX_PTT[3]     ,RX4_PTT         , EEPROM,PROTECTED},
+	{&SiteID        ,SITE_ID_VAL     , EEPROM,PROTECTED},
+	{&TXSiteID      ,0x12            , EEPROM,PROTECTED},
+  {&Morse[0]      ,MORSEID0        , EEPROM,PROTECTED},
+  {&Morse[1]      ,MORSEID1        , EEPROM,PROTECTED},
+  {&Morse[2]      ,MORSEID2        , EEPROM,PROTECTED},
+  {&Morse[3]      ,MORSEID3        , EEPROM,PROTECTED},
+  {&Morse[4]      ,MORSEID4        , EEPROM,PROTECTED},
+  {&Morse[5]      ,MORSEID5        , EEPROM,PROTECTED},
+	{&AuxOutOp[0]   ,AUXOUTOP0       , EEPROM,PROTECTED},
+	{&AuxOutOp[1]   ,AUXOUTOP1       , EEPROM,PROTECTED},
+	{&AuxOutOp[2]   ,AUXOUTOP2       , EEPROM,PROTECTED},
+	{&AuxOutArg[0]  ,AUXOUTARG0      , EEPROM,PROTECTED},
+	{&AuxOutArg[1]  ,AUXOUTARG1      , EEPROM,PROTECTED},
+	{&AuxOutArg[2]  ,AUXOUTARG2      , EEPROM,PROTECTED},
+	{&AuxInOp[0]    ,AUXINOP0        , EEPROM,PROTECTED},
+	{&AuxInOp[1]    ,AUXINOP1        , EEPROM,PROTECTED},
+	{&AuxInOp[2]    ,AUXINOP2        , EEPROM,PROTECTED},
+	{&AuxInArg[0]   ,AUXINARG0       , EEPROM,PROTECTED},
+	{&AuxInArg[1]   ,AUXINARG1       , EEPROM,PROTECTED},
+	{&AuxInArg[2]   ,AUXINARG2       , EEPROM,PROTECTED},
+  {&Tail          ,TAIL_CHAR       , EEPROM,PROTECTED},
+  {&TOT_Min       ,TOT_MIN         , EEPROM,PROTECTED},
+  {&Link_TOT      ,LINK_TOT        , EEPROM,PROTECTED},
+	{&COR_EMUL      ,0x00            , RAM   ,PUBLIC},
+	{&CurrentTrimPot,0x00            , RAM   ,PROTECTED},
 };
 
 
