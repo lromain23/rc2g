@@ -904,6 +904,7 @@ void initialize (void) { // {{{
   DTMF_IN_FLAG=0;
   DTMF_INTERRUPT_FLAG=0;
   TOT_FLAG_Mask=0;
+  AuxOutDelayCnt=0;
   LastRegisterIndexValid=0;
   LastRegisterIndex=0;
   CurrentCorMask=0;
@@ -1161,6 +1162,20 @@ void ExecAuxOutOp(int op,int arg,int ID) { // {{{
       // Upper argument (uarg) inverts the output (bitwise invert selection)
       AuxOut[ID] = ((AuxInSW & larg) ^ uarg)!=0;
     break;
+    case AUX_OUT_FOLLOW_COR_DELAY: 
+      // Invert AuxIn value if argument 1 is set
+      // Check what is the effective COR_IN. Many COR_INs can be applied but 
+      // Only one is really effective and used to drive PTTs
+      int1 cor_active = ((COR_IN_EFFECTIVE ^ uarg) & larg) != 0;
+      int1 pin_value;
+      if ( cor_active ) {
+        pin_value = 1;
+        AuxOutDelayCnt = 60;
+      } else {
+        pin_value = (AuxOutDelayCnt != 0);
+      }
+      AuxOut[ID] = pin_value;
+    break;
   }
 } // }}}
 char str_to_decimal(char *str) { // {{{
@@ -1294,6 +1309,7 @@ void main (void) { // {{{
     if ( AUX_IN_FLAG ) {
       update_aux_in();
       AUX_IN_FLAG=0;
+      AUX_OUT_FLAG=1;
     }
     do_delay_counters();
     restart_wdt();
@@ -1301,9 +1317,13 @@ void main (void) { // {{{
       process_cor();
       // Call update_aux_out to instantly update AuxOut 
       // values when one of them is following a COR.
-      update_aux_out(); 
+      AUX_OUT_FLAG=1;
       COR_FLAG=0;
       restart_wdt();
+    }
+    if ( AUX_OUT_FLAG ) {
+      update_aux_out(); 
+      AUX_OUT_FLAG=0;
     }
     if ( DTMF_INTERRUPT_FLAG ) {
       // Extract data from DTMF device
@@ -1432,7 +1452,7 @@ void init_lcd(void) { // {{{
 void do_delay_counters(void) {
   // Second Flag {{{
   if ( SECOND_FLAG ) {
-    update_aux_out();
+    AUX_OUT_FLAG=1;
     // Time Out PTT {{{
     if ( TOT_SecondCounter || TOT_Min == 0) {
       TOT_SecondCounter--;
@@ -1443,6 +1463,11 @@ void do_delay_counters(void) {
     } else if ( COR_IN_EFFECTIVE != 0x00 ) {
       TOT_FLAG_Mask=COR_IN_EFFECTIVE;
       update_ptt(0);
+    }
+    // }}}
+    // AuxOutDelayCnt {{{
+    if ( AuxOutDelayCnt ) {
+      AuxOutDelayCnt--;
     }
     // }}}
     // Admin mode timeout {{{

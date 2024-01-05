@@ -127,6 +127,9 @@ char admin_timer;
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
+// This command operates the same way as AUX_OUT_FOLLOW_COR but
+// it extends the aux output by 1 minute.
+#define AUX_OUT_FOLLOW_COR_DELAY 0x03
 // Follow COR args:
 #define AUX_OUT_FOLLOW_COR1 0x01
 #define AUX_OUT_FOLLOW_COR2 0x02
@@ -175,6 +178,7 @@ char admin_timer;
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
 unsigned long aux_timer;
+unsigned int AuxOutDelayCnt;
 #define AUX_TIMER_1S 31
 #define AUX_TIMER_500ms 16 
 #define AUX_TIMER_400ms 13 
@@ -299,6 +303,7 @@ int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
 int1       COR_DROP_FLAG;
 int1       AUX_IN_FLAG;
+int1 	   AUX_OUT_FLAG;
 int        SecondCounter,MinuteCounter;
 unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
