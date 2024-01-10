@@ -52,6 +52,10 @@ void pot_values_to_lcd(void);
 void init_variables(int1 src);
 void status(void);
 void set_var(void);
+#if __DEVICE__==1939
+void set_bit(void);
+void clear_bit(void);
+#endif
 void tokenize_sBuffer(void);
 void store_variables(void);
 void clear_dtmf_array(void);
@@ -80,6 +84,7 @@ unsigned int SiteID,TXSiteID;
 unsigned int Tail;
 unsigned int TOT_Min;
 unsigned int TOT_FLAG_Mask;
+unsigned long QSO_Duration;
 unsigned int Link_TOT,LinkDurationTimer;
 unsigned int COR_EMUL;
 unsigned int COR_AUX;
@@ -122,19 +127,24 @@ char admin_timer;
 #define SEND_MORSE_ID 3
 #define MORSE_SEND 11
 #define I2C_SEND 12
+#define SET_BIT 14
+#define CLEAR_BIT 15
 
 // Auxiliary Output Operators
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define QSO_DURATION_DELAY 5
 // This command operates the same way as AUX_OUT_FOLLOW_COR but
 // it extends the aux output by 1 minute.
-#define AUX_OUT_FOLLOW_COR_DELAY 0x03
 // Follow COR args:
 #define AUX_OUT_FOLLOW_COR1 0x01
 #define AUX_OUT_FOLLOW_COR2 0x02
 #define AUX_OUT_FOLLOW_COR3 0x04
 #define AUX_OUT_FOLLOW_COR4 0x08
+#define AUX_OUT_FOLLOW_COR_INVERT_OUTPUT 0x10
+#define AUX_OUT_FOLLOW_COR_OFF_DELAY     0x20
+#define AUX_OUT_FOLLOW_COR_ON_DELAY      0x40
 #define AUX_OUT_FOLLOW_COR_INVERT1 0x10
 #define AUX_OUT_FOLLOW_COR_INVERT2 0x20
 #define AUX_OUT_FOLLOW_COR_INVERT3 0x40
@@ -238,9 +248,6 @@ char LCD_str[LCD_STR_SIZE];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
 // It is used by the INCR or DECR commands
-unsigned int  LastRegisterIndex;
-unsigned int  LastRegisterIndexValid;
-
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
 #define MORSE_CHAR_ARRAY_LENGTH 37
@@ -305,7 +312,6 @@ int1       COR_DROP_FLAG;
 int1       AUX_IN_FLAG;
 int1 	   AUX_OUT_FLAG;
 int        SecondCounter,MinuteCounter;
-unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1       DTMF_INTERRUPT_FLAG;

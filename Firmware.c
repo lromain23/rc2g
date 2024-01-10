@@ -150,8 +150,6 @@ void execute_command(void) { // {{{
       break;
     case GET_REG:
       regPtr=RegMap[argument].reg_ptr;
-      LastRegisterIndex = argument;
-      LastRegisterIndexValid=1;
       cPtr = &reg_name + ((unsigned long)argument * REG_NAME_SIZE);
       romstrcpy(rname,cPtr);
       sprintf(LCD_str,"[%02u] %s %u\n\r",argument,rname,*regPtr);
@@ -223,6 +221,14 @@ void execute_command(void) { // {{{
       lcd_send(lcd_cmd,LCD_str);
 #endif
       break;
+#if __DEVICE__  == 1939
+    case SET_BIT:
+      set_bit();
+      break;
+    case CLEAR_BIT:
+      clear_bit();
+      break;
+#endif
     case MORSE_SEND:
       morse(value);
       break;
@@ -387,13 +393,11 @@ void update_ptt(int cor) { // {{{
     }
     PROMPT_FLAG=1;
   }
-  if(cor>0) {
-    COR_s[cor-1]='1';
-    sprintf(LCD_str,"COR:%s PTT:%s",COR_s,PTT_s);
-    lcd_send(1,LCD_str); // COR/PTT on line 1
-    delay_ms(50);
-    pot_values_to_lcd();
-  }
+  COR_s[cor-1]='1';
+  sprintf(LCD_str,"COR:%s PTT:%s",COR_s,PTT_s);
+  lcd_send(1,LCD_str); // COR/PTT on line 1
+  delay_ms(50);
+  pot_values_to_lcd();
 }// }}}
 int ValidKey(int index) { // {{{
   int strobe;
@@ -448,9 +452,11 @@ void process_dtmf(void) { // {{{
   //    :    Args : 0 - Normal mode
   //    :           1 - Enter Admin mode
   //    :           2 - Reboot
-  // 10 : -- UNUSED --
-  // 11 : Morse send
+  // 10 : Disable Link Radio
+  // 11 : Enable Link Radio
   // 12 : Send to I2C
+  // 14 : SetBit   (*52 14 <reg> <bit>)
+  // 15 : ClearBit (*52 15 <reg> <bit>)
   // 
   // Ex: (# = 12)
   // Enter Admin mode       : 52 09 01 #
@@ -459,6 +465,7 @@ void process_dtmf(void) { // {{{
   // Set XO3(22) to 0       : 52 02 22 0 #
   // Set XO3(22) to 1       : 52 02 22 1 #
   // Change to pot 4        : 52 02 55 3 #
+  // Save Settings	    : 52 04 00 #
   // Increment POT 01 by 3  : 52 06 01 3 #
   // Decrement POT 03 by 4  : 52 07 03 4 #
   // -- User Functions --
@@ -488,14 +495,16 @@ void process_dtmf(void) { // {{{
         case(10):
           argument = 0;
           value = 0x0E;
+	  command=SET_REG;
   	      break;
         case(11):
           argument = 0;
           value = 0x0F;
+	  command=SET_REG;
    		    break;
+	default:
+	  command=0;
       }
-      // Override command
-      command=SET_REG;
       // User function }}}
     }
     // Commands that don't need arguments but need a value:
@@ -576,7 +585,6 @@ void process_cor (void) { // {{{
         }
         cor_index=x+1;
         do_update_ptt=1;
-        TOT_SecondCounter= 60 * TOT_Min;
 	TOT_FLAG_Mask=0;
         // COR_IN_EFFECTIVE points to the one that is selected
         COR_IN_EFFECTIVE=cor_mask;
@@ -609,8 +617,6 @@ void clear_dtmf_array(void) { // {{{
   }
   DTMF_ptr=&DTMF_ARRAY[0];
 } // }}}
-void header (void) { // {{{
-} // }}}
 void status (void) { // {{{
   unsigned long x;
   char y;
@@ -620,7 +626,6 @@ void status (void) { // {{{
   char aux_in;
   char rname[REG_NAME_SIZE];
   clearscr();
-  header();
   dtmf_in=dtmf_read(CONTROL_REG);
   aux_in = 0;
   for(x=0;x<RegMapNum;x++) {
@@ -805,9 +810,9 @@ void print_dtmf_info(void) { // {{{
   for(x=0;x<DTMF_ARRAY_SIZE;x++) {
     if(DTMF_ARRAY[x].Strobe) {
       dtmf=(int)DTMF_ARRAY[x].Key;
-      sprintf(tmp,"%d ",dtmf);
+      sprintf(tmp,"%d",dtmf);
       strcat(LCD_str,tmp);
-      printf(" %u",dtmf);
+      printf("%u",dtmf);
     }
   restart_wdt();
   }
@@ -905,8 +910,6 @@ void initialize (void) { // {{{
   DTMF_INTERRUPT_FLAG=0;
   TOT_FLAG_Mask=0;
   AuxOutDelayCnt=0;
-  LastRegisterIndexValid=0;
-  LastRegisterIndex=0;
   CurrentCorMask=0;
   CurrentCorPriority=0;
   CurrentCorIndex=0;
@@ -942,7 +945,6 @@ void initialize (void) { // {{{
   // Master Weak pull-up enable
   WPUEN = 0;
   // }}}
-  header();
   // C7 : UART RX
   // C6 : UART TX
   // C5 : Aux1 Out
@@ -1020,6 +1022,18 @@ void tokenize_sBuffer() { // {{{
       command=SET_REG;
     }
   } // }}}
+#if __DEVICE__  == 1939
+  // Check for "setb" command {{{
+  strcpy(smatch_reg,"setb");  
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+      command=SET_BIT;
+  } // }}}
+  // Check for "setb" command {{{
+  strcpy(smatch_reg,"clrb");  
+  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+      command=CLEAR_BIT;
+  } // }}}
+#endif
   // Check for "SAVE" command {{{
   strcpy(smatch_reg,"SAVE");  
   if ( my_stricmp(smatch_reg,verb) == 0 ) {
@@ -1099,6 +1113,24 @@ void tokenize_sBuffer() { // {{{
     PROMPT_FLAG = 1;
   } // }}}
 } // }}}
+#if __DEVICE__  == 1939
+void set_bit (void) { // {{{
+  int *pObj;
+    pObj=RegMap[argument].reg_ptr;
+    if ( in_admin_mode() || (RegMap[argument].usage==PUBLIC) ) {
+      *pObj=bit_set(*pObj,(value&0x1F));
+    }
+    PROMPT_FLAG;
+} // }}}
+void clear_bit (void) { // {{{
+  int *pObj;
+    pObj=RegMap[argument].reg_ptr;
+    if ( in_admin_mode() || (RegMap[argument].usage==PUBLIC) ) {
+      *pObj=bit_clear(*pObj,(value&0x1F));
+    }
+    PROMPT_FLAG=1;
+} // }}}
+#endif
 void set_var (void) { // {{{
   // This function sets the specified register if a value is specified.
   // Otherwise it displays it.
@@ -1114,9 +1146,7 @@ void set_var (void) { // {{{
       *pObj=value;
     }
     lVar = *pObj;
-    LastRegisterIndex = argument;
-    LastRegisterIndexValid=1;
-    printf ("\n\rSetting %s(%u) to %u",argument_name,argument,lVar);
+    printf ("\n\r%s(%u) <= %u",argument_name,argument,lVar);
     if ( (pObj >= &RX_GAIN[0][0] && pObj <= &RX_GAIN[3][3]) || pObj == &CurrentTrimPot ) {
       increment(0); // Increment is done in this function. Only update trim pot.
     }
@@ -1146,35 +1176,41 @@ void romstrcpy(char *dest,rom char *src) { // {{{
   c++;
   }
 } // }}}
-void ExecAuxOutOp(int op,int arg,int ID) { // {{{
+void ExecAuxOutOp(char op,char arg,char ID) { // {{{
   char larg,uarg; // Lower and upper nibbles
   larg = arg & 0x0F;
   uarg = (arg & 0xF0) >> 4;
   switch(op) {
-    case AUX_OUT_FOLLOW_COR: 
-      // Invert AuxIn value if argument 1 is set
-      // Check what is the effective COR_IN. Many COR_INs can be applied but 
-      // Only one is really effective and used to drive PTTs
-      AuxOut[ID] = ((COR_IN_EFFECTIVE ^ uarg) & larg) != 0;
-    break;
     case AUX_OUT_FOLLOW_AUX_IN:
       // Lower argument (larg) enables the comparison (bitwise enable)
       // Upper argument (uarg) inverts the output (bitwise invert selection)
       AuxOut[ID] = ((AuxInSW & larg) ^ uarg)!=0;
     break;
-    case AUX_OUT_FOLLOW_COR_DELAY: 
+    case AUX_OUT_FOLLOW_COR: 
       // Invert AuxIn value if argument 1 is set
       // Check what is the effective COR_IN. Many COR_INs can be applied but 
       // Only one is really effective and used to drive PTTs
-      int1 cor_active = ((COR_IN_EFFECTIVE ^ uarg) & larg) != 0;
+      int1 invert_output = ((arg & AUX_OUT_FOLLOW_COR_INVERT_OUTPUT)!=0);
+      int1 cor_active = ((COR_IN_EFFECTIVE & ~TOT_FLAG_Mask & larg) != 0);
+      int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_COR_OFF_DELAY) !=0);
+      int1 enable_delay = ((arg & AUX_OUT_FOLLOW_COR_ON_DELAY) !=0);
+      int1 disable_delay = (disable_delay_en && (AuxOutDelayCnt != 0));
       int1 pin_value;
       if ( cor_active ) {
-        pin_value = 1;
-        AuxOutDelayCnt = 60;
+        // Activate output after several seconds of active QSO
+        // or keep the pin active if servicing a disable delay.
+        if (enable_delay) {
+          pin_value = (QSO_Duration > QSO_DURATION_DELAY) || disable_delay;
+          if ( pin_value ) {
+            AuxOutDelayCnt = 60;
+          }
+        } else {
+          pin_value = 1;
+        }
       } else {
-        pin_value = (AuxOutDelayCnt != 0);
+        pin_value = disable_delay;
       }
-      AuxOut[ID] = pin_value;
+      AuxOut[ID] = pin_value ^ invert_output;
     break;
   }
 } // }}}
@@ -1188,7 +1224,7 @@ char str_to_decimal(char *str) { // {{{
   }
   return(value);
 } // }}}
-void ExecAuxInOp(int op,int arg,int ID) { // {{{
+void ExecAuxInOp(char op,char arg,char ID) { // {{{
   int1 in_bit;
   int1 tmp_bit;
   in_bit = AuxInSW[ID]!=0;
@@ -1452,17 +1488,22 @@ void init_lcd(void) { // {{{
 void do_delay_counters(void) {
   // Second Flag {{{
   if ( SECOND_FLAG ) {
+    if (COR_IN_EFFECTIVE != 0x00) {
+      if ( QSO_Duration != 0xFF ) {
+        QSO_Duration++;
+      }
+    } else {
+      QSO_Duration=0;
+    }
     AUX_OUT_FLAG=1;
     // Time Out PTT {{{
-    if ( TOT_SecondCounter || TOT_Min == 0) {
-      TOT_SecondCounter--;
-      if ( TOT_Min && !TOT_SecondCounter ) {
+    if ( (TOT_Min > 0) && (QSO_Duration >= (TOT_Min*60))) {
+      if ( TOT_FLAG_Mask == 0 ) {
         printf("\n\r# PTT Timeout!\n");
         PROMPT_FLAG=1;
+        update_ptt(0);
       }
-    } else if ( COR_IN_EFFECTIVE != 0x00 ) {
       TOT_FLAG_Mask=COR_IN_EFFECTIVE;
-      update_ptt(0);
     }
     // }}}
     // AuxOutDelayCnt {{{
