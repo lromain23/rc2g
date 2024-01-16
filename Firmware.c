@@ -1,4 +1,5 @@
 #include "Firmware.h"
+
 #INT_RDA
 void rs232_int (void) { // {{{
 // RS232 serial buffer interrupt handler.
@@ -27,16 +28,13 @@ void rs232_int (void) { // {{{
     }
   }
 } // }}}
+
 #INT_RB
 void RB0_INT (void) { // {{{
-  int LAST_COR_IN;
   //if(interrupt_active(INT_RB0|INT_RB1|INT_RB2|INT_RB3)) {
-  if(IOCBF&0x0F) { // Check for interrupts on RB[3:0] only
-    LAST_COR_IN=COR_IN;
-    COR_IN= ((input_b() ^ Polarity)&0x0F) | (COR_EMUL & 0x1F) | (COR_AUX&0x0F);
-    if ( LAST_COR_IN != COR_IN ) {
-      COR_FLAG = 1;
-    }
+  if( IOCBF & 0x0F ) { // Check for interrupts on RB[3:0] only
+    // COR_IN_HW = actual COR_IN values from controller input ports.
+    COR_IN_FLAG=1;
     clear_interrupt(INT_RB0|INT_RB1|INT_RB2|INT_RB3);
   }
   if ( interrupt_active(INT_RB4_H2L) ) {
@@ -49,19 +47,33 @@ void RB0_INT (void) { // {{{
     clear_interrupt(INT_RB6|INT_RB7);
   }
 } // }}}
+
 #INT_TIMER0
 void int_rtcc(void) { // {{{
   if ( rtcc_cnt ) {
     rtcc_cnt--;
   } else {
-    COR_IN= ((input_b() ^ Polarity)&0x0F) | (COR_EMUL & 0x1F) | (COR_AUX&0x0F);
-    COR_FLAG=1;
+    COR_IN_FLAG = 1;
     SECOND_FLAG=1;
     AUX_IN_FLAG=1;
     rtcc_cnt=30;
   }
   if (aux_timer ) {
     aux_timer--;
+  }
+} // }}}
+
+int1 read_cor_in_ports (void) { // {{{
+  // Updates COR_IN_HW and COR_IN variables
+  // Returns a 1 if a new COR is detected.
+  unsigned int LAST_COR_IN;
+  LAST_COR_IN = COR_IN;
+  COR_IN_HW   = ((input_b() ^ Polarity)&0x0F);
+  COR_IN      = COR_IN_HW | (COR_EMUL & 0x1F) | (COR_AUX&0x0F);
+  if ( LAST_COR_IN != COR_IN ) {
+    return(1);
+  } else {
+    return(0);
   }
 } // }}}
 int1 warn_no_lcd = 1;
@@ -586,6 +598,7 @@ void process_cor (void) { // {{{
         cor_index=x+1;
         do_update_ptt=1;
 	TOT_FLAG_Mask=0;
+	QSO_Duration = 0;
         // COR_IN_EFFECTIVE points to the one that is selected
         COR_IN_EFFECTIVE=cor_mask;
       }
@@ -647,7 +660,7 @@ void status (void) { // {{{
       aux_in += (1<<y);
     }
   }
-  printf("\n\n\rCOR:%u (Emul:%u); AuxIn:%u TOT:%u",COR_IN,COR_EMUL,aux_in,TOT_FLAG_Mask);
+  printf("\n\n\rCOR:%u (Emul:%u); AuxIn:%u",COR_IN,COR_EMUL,aux_in);
   printf("\n\rDTMF Status : %u\n\r",dtmf_in);
   pot_values_to_lcd();
   PROMPT_FLAG=1;
@@ -902,6 +915,8 @@ void initialize (void) { // {{{
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
   setup_wdt(WDT_2S);
+  PROCESS_COR_FLAG=0;
+  COR_IN_FLAG=0;
   COR_IN=0;
   COR_EMUL=0;
   COR_AUX=0;
@@ -1190,8 +1205,10 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       // Invert AuxIn value if argument 1 is set
       // Check what is the effective COR_IN. Many COR_INs can be applied but 
       // Only one is really effective and used to drive PTTs
+      // Only COR_IN_HW is used which corresponds to the COR inputs on the controller.
+      // Emulated COR_IN are ignored.
       int1 invert_output = ((arg & AUX_OUT_FOLLOW_COR_INVERT_OUTPUT)!=0);
-      int1 cor_active = ((COR_IN_EFFECTIVE & ~TOT_FLAG_Mask & larg) != 0);
+      int1 cor_active = ((COR_IN_HW & ~TOT_FLAG_Mask & larg) != 0);
       int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_COR_OFF_DELAY) !=0);
       int1 enable_delay = ((arg & AUX_OUT_FOLLOW_COR_ON_DELAY) !=0);
       int1 disable_delay = (disable_delay_en && (AuxOutDelayCnt != 0));
@@ -1325,7 +1342,7 @@ void send_morse_id (void) { // {{{
     }
   }
   delay_ms(1000);
-  COR_FLAG=1;
+  PROCESS_COR_FLAG=1;
 } // }}}
 void main (void) { // {{{
   initialize();
@@ -1349,12 +1366,16 @@ void main (void) { // {{{
     }
     do_delay_counters();
     restart_wdt();
-    if ( COR_FLAG ) {
+    if ( COR_IN_FLAG ) {
+      PROCESS_COR_FLAG = read_cor_in_ports();
+      COR_IN_FLAG = 0;
+    }
+    if ( PROCESS_COR_FLAG ) {
       process_cor();
       // Call update_aux_out to instantly update AuxOut 
       // values when one of them is following a COR.
       AUX_OUT_FLAG=1;
-      COR_FLAG=0;
+      PROCESS_COR_FLAG=0;
       restart_wdt();
     }
     if ( AUX_OUT_FLAG ) {
@@ -1485,15 +1506,12 @@ void init_lcd(void) { // {{{
   lcd_write(0,0x04);
   i2c_stop();
 } // }}}
+
 void do_delay_counters(void) {
   // Second Flag {{{
   if ( SECOND_FLAG ) {
-    if (COR_IN_EFFECTIVE != 0x00) {
-      if ( QSO_Duration != 0xFF ) {
-        QSO_Duration++;
-      }
-    } else {
-      QSO_Duration=0;
+    if ((COR_IN_EFFECTIVE != 0x00) && (QSO_Duration != 0xFFFF )) {
+      QSO_Duration++; 
     }
     AUX_OUT_FLAG=1;
     // Time Out PTT {{{

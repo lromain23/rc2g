@@ -42,6 +42,7 @@
 char str_to_decimal(char *str);
 void process_dtmf_interrupt(void);
 void init_lcd(void);
+int1 read_cor_in_ports(void);
 void send_tail(void);
 void morse(char);
 void dit(void);
@@ -76,13 +77,15 @@ unsigned int RX_PTT[4];
 unsigned int Morse[6];
 unsigned int AuxOutOp[3],AuxOutArg[3];
 unsigned int AuxInOp[3],AuxInArg[3];
+unsigned int COR_IN_HW;
 unsigned int COR_IN;
+unsigned int COR_IN_EFFECTIVE;
 unsigned int Enable;
 unsigned int Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID,TXSiteID;
 unsigned int Tail;
-unsigned int TOT_Min;
+unsigned long TOT_Min;
 unsigned int TOT_FLAG_Mask;
 unsigned long QSO_Duration;
 unsigned int Link_TOT,LinkDurationTimer;
@@ -96,7 +99,6 @@ unsigned int ConfirmChar;
 unsigned int CurrentCorMask;
 unsigned int CurrentCorIndex;
 unsigned int CurrentCorPriority;
-char COR_IN_EFFECTIVE;
 // }}}
 
 // RS232 variables / buffers {{{
@@ -304,7 +306,8 @@ int1 in_admin_mode(void);
 void set_admin_mode(int1 enable);
 void send_morse_id(void);
 
-int1       COR_FLAG;
+int1       PROCESS_COR_FLAG;
+int1       COR_IN_FLAG;
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
