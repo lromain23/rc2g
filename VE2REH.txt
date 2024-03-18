@@ -12,5 +12,6 @@ Site ID   Controlleur     Statut      Prix    SHA1
 63        VA2CMB-Perso    Built       
 64        EricLaroche-1   Built       150$
 65        EricLaroche-2	  Built       150$
+66	  Richard	  Built	      110$
 
 

@@ -1,4 +1,4 @@
-#include <16F1937.h>
+#include <16F1939.h>
 
 #device ADC=8;
 #fuses INTRC_IO

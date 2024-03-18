@@ -93,7 +93,9 @@ void lcd_write(char rs, char data) { // {{{
 } // }}}
 
 void lcd_send(char line,char * s) { // {{{
+#ifndef LCD_TYPE_PI
   int lcd_cmd;
+#endif
   int1 ack;
 
 #ifdef LCD_ENABLE
@@ -154,7 +156,9 @@ void status_led(void) { // {{{
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
+#ifndef LCD_TYPE_PI
   int lcd_cmd;
+#endif
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
   crlf();
@@ -1168,7 +1172,6 @@ void set_bit (void) { // {{{
     if ( in_admin_mode() || (RegMap[argument].usage==PUBLIC) ) {
       *pObj=bit_set(*pObj,(value&0x1F));
     }
-    PROMPT_FLAG;
 } // }}}
 void clear_bit (void) { // {{{
   int *pObj;
