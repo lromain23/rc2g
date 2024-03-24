@@ -34,17 +34,17 @@
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
-//#use fast_io (a)
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
 #use fast_io (e)
 
-
 //function headers
 char str_to_decimal(char *str);
 void process_dtmf_interrupt(void);
+void crlf (void);
 void init_lcd(void);
+int1 read_cor_in_ports(void);
 void send_tail(void);
 void status_led(void);
 void morse(char);
@@ -56,6 +56,10 @@ void pot_values_to_lcd(void);
 void init_variables(int1 src);
 void status(void);
 void set_var(void);
+#if __DEVICE__==1939
+void set_bit(void);
+void clear_bit(void);
+#endif
 void tokenize_sBuffer(void);
 void store_variables(void);
 void clear_dtmf_array(void);
@@ -77,15 +81,20 @@ unsigned int RX_PTT[4];
 unsigned int Morse[6];
 unsigned int AuxOutOp[3],AuxOutArg[3];
 unsigned int AuxInOp[3],AuxInArg[3];
+unsigned int COR_IN_HW;
 unsigned int COR_IN;
+unsigned int COR_IN_EFFECTIVE;
 unsigned int Enable;
 unsigned int Enable_Mask;
 unsigned int Polarity;
 unsigned int SiteID,TXSiteID;
 unsigned int Tail;
-unsigned int TOT_Min;
+unsigned long TOT_Min;
+unsigned int TOT_FLAG_Mask;
+unsigned long QSO_Duration;
 unsigned int Link_TOT,LinkDurationTimer;
 unsigned int COR_EMUL;
+unsigned int COR_AUX;
 unsigned int TailChar;
 unsigned int ConfirmChar;
 // Variables accessed using linear addressing }}}
@@ -94,7 +103,6 @@ unsigned int ConfirmChar;
 unsigned int CurrentCorMask;
 unsigned int CurrentCorIndex;
 unsigned int CurrentCorPriority;
-char COR_IN_EFFECTIVE;
 // }}}
 
 // RS232 variables / buffers {{{
@@ -135,16 +143,24 @@ char admin_timer;
 #define SEND_MORSE_ID 3
 #define MORSE_SEND 11
 #define I2C_SEND 12
+#define SET_BIT 14
+#define CLEAR_BIT 15
 
 // Auxiliary Output Operators
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define QSO_DURATION_DELAY 5
+// This command operates the same way as AUX_OUT_FOLLOW_COR but
+// it extends the aux output by 1 minute.
 // Follow COR args:
 #define AUX_OUT_FOLLOW_COR1 0x01
 #define AUX_OUT_FOLLOW_COR2 0x02
 #define AUX_OUT_FOLLOW_COR3 0x04
 #define AUX_OUT_FOLLOW_COR4 0x08
+#define AUX_OUT_FOLLOW_COR_INVERT_OUTPUT 0x10
+#define AUX_OUT_FOLLOW_COR_OFF_DELAY     0x20
+#define AUX_OUT_FOLLOW_COR_ON_DELAY      0x40
 #define AUX_OUT_FOLLOW_COR_INVERT1 0x10
 #define AUX_OUT_FOLLOW_COR_INVERT2 0x20
 #define AUX_OUT_FOLLOW_COR_INVERT3 0x40
@@ -175,11 +191,11 @@ char admin_timer;
 
 #define AUXI_EMULATE_COR 0x04
 // Arguments
-#define AUXI_EMULATE_COR0 0x01
-#define AUXI_EMULATE_COR1 0x02
-#define AUXI_EMULATE_COR2 0x04
-#define AUXI_EMULATE_COR3 0x08
-#define AUXI_EMULATE_COR4 0x10 // COR from AUX only for DTMF control (No audio feed-thru)
+#define AUXI_EMULATE_COR1 0x01
+#define AUXI_EMULATE_COR2 0x02
+#define AUXI_EMULATE_COR3 0x04
+#define AUXI_EMULATE_COR4 0x08
+#define AUXI_EMULATE_COR5 0x10 // COR from AUX only for DTMF control (No audio feed-thru)
 #define AUXI_EMULATE_COR_ACTIVE_LO 0x20
 
 // Digital TrimPot
@@ -189,6 +205,7 @@ char admin_timer;
 unsigned int CurrentTrimPot;
 unsigned long rtcc_cnt;
 unsigned long aux_timer;
+unsigned int AuxOutDelayCnt;
 #define AUX_TIMER_1S 31
 #define AUX_TIMER_500ms 16 
 #define AUX_TIMER_400ms 13 
@@ -248,9 +265,6 @@ char LCD_str[LCD_STR_SIZE];
 // RegisterPointer is set by the get_var command.
 // It points to the last register that was accessed.
 // It is used by the INCR or DECR commands
-unsigned int  LastRegisterIndex;
-unsigned int  LastRegisterIndexValid;
-
 // cMorseChar {{{
 // Word is read from right to left (LSB to MSB)
 #define MORSE_CHAR_ARRAY_LENGTH 37
@@ -307,19 +321,20 @@ int1 in_admin_mode(void);
 void set_admin_mode(int1 enable);
 void send_morse_id(void);
 
+int1 PROCESS_COR_FLAG;
+int1 COR_IN_FLAG;
 int1 ENTER_PRESSED;
 int1 SELECT_PRESSED;
 int  adj_value_a,adj_value_b;
 char button_state;
-int1       COR_FLAG;
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
 int1       COR_DROP_FLAG;
 int1       AUX_IN_FLAG;
+int1 	   AUX_OUT_FLAG;
 int        SecondCounter,MinuteCounter;
 int1       STATUS_LED;
-unsigned long TOT_SecondCounter;
 int1	     DTMF_FLAG;
 int1	     DTMF_IN_FLAG;
 int1       DTMF_INTERRUPT_FLAG;
@@ -532,9 +547,9 @@ struct sRegMap_t const RegMap[]={
 	{&AuxIn[0]      ,0               , EEPROM,PUBLIC},
 	{&AuxIn[1]      ,0               , EEPROM,PUBLIC},
 	{&AuxIn[2]      ,0               , EEPROM,PUBLIC},
-	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PROTECTED},
-	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PROTECTED},
-	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PROTECTED},
+	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC},
+	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC},
+	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC},
 	{&RXPriority[0] ,4               , EEPROM,PROTECTED},
 	{&RXPriority[1] ,6               , EEPROM,PROTECTED},
 	{&RXPriority[2] ,6               , EEPROM,PROTECTED},
