@@ -1,4 +1,4 @@
-#define SITE_ID_VAL  	66
+#define SITE_ID_VAL  	67
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
@@ -26,7 +26,7 @@
 // AuxIn1 used by AuxOut 1
 #define AUXINOP0  0
 #define AUXINARG0 0
-#define AUXINOP1 AUXI_TAIL_WHEN_HI
+#define AUXINOP1  0
 #define AUXINARG1 MCHAR('b')
 #define AUXINOP2  0
 #define AUXINARG2 0

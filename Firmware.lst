@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               24-Mar-24 12:07
+CCS PCM C Compiler, Version 4.140, 64991               19-Nov-24 13:37
 
-               Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\EricLaroche\66\Firmware.lst
+               Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\EricLaroche\67\Firmware.lst
 
                ROM used:   8099 words (99%)
                            Largest free fragment is 64
@@ -3270,7 +3270,7 @@ CCS PCM C Compiler, Version 4.140, 64991               24-Mar-24 12:07
 .................... }; 
 ....................  
 .................... #include "SITE_XX.h" 
-.................... #define SITE_ID_VAL  	66 
+.................... #define SITE_ID_VAL  	67 
 .................... #define SITE_GID_VAL 	90 
 .................... #define POLARITY_DEF_VAL 0x0F  
 .................... #define ENABLE_DEFAULT 15 
@@ -3298,7 +3298,7 @@ CCS PCM C Compiler, Version 4.140, 64991               24-Mar-24 12:07
 .................... // AuxIn1 used by AuxOut 1 
 .................... #define AUXINOP0  0 
 .................... #define AUXINARG0 0 
-.................... #define AUXINOP1 AUXI_TAIL_WHEN_HI 
+.................... #define AUXINOP1  0 
 .................... #define AUXINARG1 MCHAR('b') 
 .................... #define AUXINOP2  0 
 .................... #define AUXINARG2 0 
