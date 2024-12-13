@@ -1258,6 +1258,9 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
           }
         } else {
           pin_value = 1;
+	  if ( disable_delay_en ) {
+            AuxOutDelayCnt = 60;
+	  }
         }
       } else {
         pin_value = disable_delay;

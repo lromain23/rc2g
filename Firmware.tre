@@ -1892,13 +1892,13 @@
    ³  ³        ³  ÃÄ@PUTCHARI_BIU_1  0/7  Ram=0
    ³  ³        ³  ÀÄ@PUTCHARI_BIU_1  0/7  Ram=0
    ³  ³        ÀÄ@PSTRINGR_9600_118_119  1/26  Ram=2
-   ³  ÃÄupdate_aux_out  3/389  Ram=21
+   ³  ÃÄupdate_aux_out  3/395  Ram=21
    ³  ³  ÃÄExecAuxOutOp  (Inline)  Ram=9
    ³  ³  ÃÄ@const502  0/4  Ram=0
    ³  ³  ÃÄ@WRITEBITA  0/34  Ram=6
    ³  ³  ÃÄ@WRITEBITA  0/34  Ram=6
    ³  ³  ÃÄExecAuxInOp  2/98  Ram=6
-   ³  ³  ³  ÀÄ@goto12634  2/8  Ram=0
+   ³  ³  ³  ÀÄ@goto12638  2/8  Ram=0
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ÃÄ@PSTRINGR_559  1/21  Ram=2
