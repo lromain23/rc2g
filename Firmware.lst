@@ -1,8 +1,8 @@
-CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
+CCS PCM C Compiler, Version 4.140, 64991               17-Dec-24 12:14
 
                Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\62_St-Joseph\Firmware.lst
 
-               ROM used:   8105 words (99%)
+               ROM used:   8103 words (99%)
                            Largest free fragment is 58
                RAM used:   168 (33%) at main() level
                            235 (46%) worst case
@@ -590,73 +590,73 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................    char *s; 
 ....................  
 ....................    for (s = s1; *s != '\0'; ++s); 
-16F5:  MOVLB  02
-16F6:  MOVF   2C,W
-16F7:  MOVWF  30
-16F8:  MOVF   2B,W
-16F9:  MOVWF  2F
-16FA:  MOVF   30,W
-16FB:  MOVWF  7A
-16FC:  MOVF   2F,W
-16FD:  MOVWF  04
-16FE:  MOVF   7A,W
-16FF:  MOVWF  05
-1700:  MOVF   00,F
-1701:  BTFSC  03.2
-1702:  GOTO   707
-1703:  INCF   2F,F
-1704:  BTFSC  03.2
-1705:  INCF   30,F
-1706:  GOTO   6FA
+16F3:  MOVLB  02
+16F4:  MOVF   2C,W
+16F5:  MOVWF  30
+16F6:  MOVF   2B,W
+16F7:  MOVWF  2F
+16F8:  MOVF   30,W
+16F9:  MOVWF  7A
+16FA:  MOVF   2F,W
+16FB:  MOVWF  04
+16FC:  MOVF   7A,W
+16FD:  MOVWF  05
+16FE:  MOVF   00,F
+16FF:  BTFSC  03.2
+1700:  GOTO   705
+1701:  INCF   2F,F
+1702:  BTFSC  03.2
+1703:  INCF   30,F
+1704:  GOTO   6F8
 ....................    while(*s2 != '\0') 
 ....................    { 
-1707:  MOVF   2E,W
-1708:  MOVWF  7A
-1709:  MOVF   2D,W
-170A:  MOVWF  04
-170B:  MOVF   7A,W
-170C:  MOVWF  05
-170D:  MOVF   00,F
-170E:  BTFSC  03.2
-170F:  GOTO   723
+1705:  MOVF   2E,W
+1706:  MOVWF  7A
+1707:  MOVF   2D,W
+1708:  MOVWF  04
+1709:  MOVF   7A,W
+170A:  MOVWF  05
+170B:  MOVF   00,F
+170C:  BTFSC  03.2
+170D:  GOTO   721
 ....................       *s = *s2; 
-1710:  MOVF   2D,W
-1711:  MOVWF  04
-1712:  MOVF   2E,W
-1713:  MOVWF  05
-1714:  MOVF   00,W
-1715:  MOVWF  33
-1716:  MOVF   30,W
-1717:  MOVWF  05
-1718:  MOVF   2F,W
-1719:  MOVWF  04
-171A:  MOVF   33,W
-171B:  MOVWF  00
+170E:  MOVF   2D,W
+170F:  MOVWF  04
+1710:  MOVF   2E,W
+1711:  MOVWF  05
+1712:  MOVF   00,W
+1713:  MOVWF  33
+1714:  MOVF   30,W
+1715:  MOVWF  05
+1716:  MOVF   2F,W
+1717:  MOVWF  04
+1718:  MOVF   33,W
+1719:  MOVWF  00
 ....................       ++s; 
-171C:  INCF   2F,F
-171D:  BTFSC  03.2
-171E:  INCF   30,F
+171A:  INCF   2F,F
+171B:  BTFSC  03.2
+171C:  INCF   30,F
 ....................       ++s2; 
-171F:  INCF   2D,F
-1720:  BTFSC  03.2
-1721:  INCF   2E,F
+171D:  INCF   2D,F
+171E:  BTFSC  03.2
+171F:  INCF   2E,F
 ....................    } 
-1722:  GOTO   707
+1720:  GOTO   705
 ....................  
 ....................    *s = '\0'; 
-1723:  MOVF   2F,W
-1724:  MOVWF  04
-1725:  MOVF   30,W
-1726:  MOVWF  05
-1727:  CLRF   00
+1721:  MOVF   2F,W
+1722:  MOVWF  04
+1723:  MOVF   30,W
+1724:  MOVWF  05
+1725:  CLRF   00
 ....................    return(s1); 
-1728:  MOVF   2B,W
-1729:  MOVWF  78
-172A:  MOVF   2C,W
-172B:  MOVWF  79
+1726:  MOVF   2B,W
+1727:  MOVWF  78
+1728:  MOVF   2C,W
+1729:  MOVWF  79
 .................... } 
-172C:  MOVLB  00
-172D:  RETURN
+172A:  MOVLB  00
+172B:  RETURN
 .................... /* standard template: char *strncat(char *s1, char *s2,size_t n) 
 .................... appends not more than n characters from s2 to s1*/ 
 ....................  
@@ -2325,8 +2325,17 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 .................... //// #define FASTER_BUT_MORE_ROM          //// 
 .................... ////////////////////////////////////////////// 
 ....................  
+*
+16D4:  MOVLW  00
+16D5:  BTFSC  2E.1
+16D6:  MOVLW  01
 ....................  
 ....................  
+*
+16D8:  MOVLW  00
+16D9:  BTFSC  2E.0
+16DA:  MOVLW  01
+16DB:  XORWF  32,W
 .................... /*Copying functions*/ 
 .................... /* standard template: 
 ....................    void *memmove(void *s1, void *s2, size_t n). 
@@ -3296,10 +3305,13 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 .................... //#define AUXINOP0 AUXI_ENABLE 
 .................... //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4 
 .................... // AuxIn1 used by AuxOut 1 
+....................  
 .................... #define AUXINOP0  AUXI_EMULATE_COR 
-.................... #define AUXINARG0 AUXI_EMULATE_COR_ACTIVE_LO|AUXI_EMULATE_COR4 
-.................... #define AUXINOP1 AUXI_TAIL_WHEN_HI 
+.................... #define AUXINARG0 AUXI_EMULATE_COR_ACTIVE_LO|AUXI_EMULATE_COR5 
+....................  
+.................... #define AUXINOP1 AUXI_TAIL_WHEN_LO 
 .................... #define AUXINARG1 MCHAR('b') 
+....................  
 .................... #define AUXINOP2  0 
 .................... #define AUXINARG2 0 
 ....................  
@@ -3633,7 +3645,9 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 15ED:  XORWF  64,W
 15EE:  ANDLW  0F
 15EF:  MOVWF  5F
-....................   COR_IN      = COR_IN_HW | (COR_EMUL & 0x1F) | (COR_AUX&0x0F); 
+....................   // COR_EMUL is set over DTMF using 'set cor <value>' 
+....................   // COR_AUX is set using AUXI_EMULATE_COR from Site_XX.h 
+....................   COR_IN      = COR_IN_HW | (COR_EMUL & 0x1F) | (COR_AUX & 0x0F); 
 15F0:  MOVF   6F,W
 15F1:  ANDLW  1F
 15F2:  IORWF  5F,W
@@ -5989,13 +6003,12 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 1674:  MOVF   6A,F
 1675:  BTFSS  03.2
 1676:  GOTO   67C
-....................     // --> Don't clear the DTMF if the Aux Input is emulating a COR 
-....................     CLEAR_DTMF_FLAG=1; 
+....................     CLEAR_DTMF_FLAG = 1; 
 1677:  BSF    62.7
-....................     COR_IN_EFFECTIVE=0; 
+....................     COR_IN_EFFECTIVE = 0; 
 1678:  MOVLB  00
 1679:  CLRF   61
-....................     TOT_FLAG_Mask=0; 
+....................     TOT_FLAG_Mask = 0; 
 167A:  CLRF   6A
 167B:  MOVLB  01
 ....................   } 
@@ -7150,140 +7163,140 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................   char tmp[5]; 
 ....................   strcpy(LCD_str,"DTMF:"); 
 *
-1780:  MOVLB  02
-1781:  CLRF   20
-1782:  CLRF   21
-1783:  MOVLW  20
-1784:  MOVWF  05
-1785:  MOVLW  7A
-1786:  MOVWF  04
-1787:  MOVF   20,W
-1788:  ADDWF  04,F
-1789:  MOVLW  00
-178A:  ADDWFC 05,F
-178B:  MOVF   21,W
-178C:  MOVLP  00
-178D:  MOVLB  00
-178E:  CALL   139
-178F:  MOVLP  10
-1790:  MOVWF  00
-1791:  IORLW  00
-1792:  BTFSC  03.2
-1793:  GOTO   799
-1794:  MOVLB  02
-1795:  INCF   21,F
-1796:  INCF   20,F
-1797:  GOTO   783
-1798:  MOVLB  00
+177E:  MOVLB  02
+177F:  CLRF   20
+1780:  CLRF   21
+1781:  MOVLW  20
+1782:  MOVWF  05
+1783:  MOVLW  7A
+1784:  MOVWF  04
+1785:  MOVF   20,W
+1786:  ADDWF  04,F
+1787:  MOVLW  00
+1788:  ADDWFC 05,F
+1789:  MOVF   21,W
+178A:  MOVLP  00
+178B:  MOVLB  00
+178C:  CALL   139
+178D:  MOVLP  10
+178E:  MOVWF  00
+178F:  IORLW  00
+1790:  BTFSC  03.2
+1791:  GOTO   797
+1792:  MOVLB  02
+1793:  INCF   21,F
+1794:  INCF   20,F
+1795:  GOTO   781
+1796:  MOVLB  00
 ....................   crlf(); 
-1799:  MOVLP  00
-179A:  CALL   457
-179B:  MOVLP  10
+1797:  MOVLP  00
+1798:  CALL   457
+1799:  MOVLP  10
 ....................   printf("DTMF="); 
-179C:  MOVLW  05
-179D:  MOVLB  03
-179E:  MOVWF  11
-179F:  MOVLW  04
-17A0:  MOVWF  12
-17A1:  MOVLP  00
-17A2:  MOVLB  00
-17A3:  CALL   45C
-17A4:  MOVLP  10
+179A:  MOVLW  05
+179B:  MOVLB  03
+179C:  MOVWF  11
+179D:  MOVLW  04
+179E:  MOVWF  12
+179F:  MOVLP  00
+17A0:  MOVLB  00
+17A1:  CALL   45C
+17A2:  MOVLP  10
 ....................   for(x=0;x<DTMF_ARRAY_SIZE;x++) { 
-17A5:  MOVLB  01
-17A6:  CLRF   68
-17A7:  MOVF   68,W
-17A8:  SUBLW  09
-17A9:  BTFSS  03.0
-17AA:  GOTO   7E4
+17A3:  MOVLB  01
+17A4:  CLRF   68
+17A5:  MOVF   68,W
+17A6:  SUBLW  09
+17A7:  BTFSS  03.0
+17A8:  GOTO   7E2
 ....................     if(DTMF_ARRAY[x].Strobe) { 
-17AB:  MOVLW  66
-17AC:  ADDWF  68,W
-17AD:  MOVWF  04
-17AE:  MOVLW  20
-17AF:  MOVWF  05
-17B0:  BTFSC  03.0
-17B1:  INCF   05,F
-17B2:  BTFSS  00.4
-17B3:  GOTO   7E1
+17A9:  MOVLW  66
+17AA:  ADDWF  68,W
+17AB:  MOVWF  04
+17AC:  MOVLW  20
+17AD:  MOVWF  05
+17AE:  BTFSC  03.0
+17AF:  INCF   05,F
+17B0:  BTFSS  00.4
+17B1:  GOTO   7DF
 ....................       dtmf=(int)DTMF_ARRAY[x].Key; 
-17B4:  MOVLW  66
-17B5:  ADDWF  68,W
-17B6:  MOVWF  04
-17B7:  MOVLW  20
-17B8:  MOVWF  05
-17B9:  BTFSC  03.0
-17BA:  INCF   05,F
-17BB:  MOVF   00,W
-17BC:  ANDLW  0F
-17BD:  MOVWF  69
+17B2:  MOVLW  66
+17B3:  ADDWF  68,W
+17B4:  MOVWF  04
+17B5:  MOVLW  20
+17B6:  MOVWF  05
+17B7:  BTFSC  03.0
+17B8:  INCF   05,F
+17B9:  MOVF   00,W
+17BA:  ANDLW  0F
+17BB:  MOVWF  69
 ....................       sprintf(tmp,"%d",dtmf); 
-17BE:  MOVLW  20
-17BF:  MOVWF  67
-17C0:  MOVLW  9A
-17C1:  MOVWF  66
-17C2:  MOVF   69,W
-17C3:  MOVLB  02
-17C4:  MOVWF  4C
-17C5:  MOVLW  18
-17C6:  MOVWF  4D
-17C7:  MOVLP  08
-17C8:  MOVLB  00
-17C9:  CALL   173
-17CA:  MOVLP  10
+17BC:  MOVLW  20
+17BD:  MOVWF  67
+17BE:  MOVLW  9A
+17BF:  MOVWF  66
+17C0:  MOVF   69,W
+17C1:  MOVLB  02
+17C2:  MOVWF  4C
+17C3:  MOVLW  18
+17C4:  MOVWF  4D
+17C5:  MOVLP  08
+17C6:  MOVLB  00
+17C7:  CALL   173
+17C8:  MOVLP  10
 ....................       strcat(LCD_str,tmp); 
-17CB:  MOVLW  20
-17CC:  MOVLB  02
-17CD:  MOVWF  2C
-17CE:  MOVLW  7A
-17CF:  MOVWF  2B
-17D0:  MOVLW  20
-17D1:  MOVWF  2E
-17D2:  MOVLW  9A
-17D3:  MOVWF  2D
-17D4:  MOVLB  00
-17D5:  CALL   6F5
+17C9:  MOVLW  20
+17CA:  MOVLB  02
+17CB:  MOVWF  2C
+17CC:  MOVLW  7A
+17CD:  MOVWF  2B
+17CE:  MOVLW  20
+17CF:  MOVWF  2E
+17D0:  MOVLW  9A
+17D1:  MOVWF  2D
+17D2:  MOVLB  00
+17D3:  CALL   6F3
 ....................       printf("%u",dtmf); 
-17D6:  MOVLB  01
-17D7:  MOVF   69,W
-17D8:  MOVLB  02
-17D9:  MOVWF  52
-17DA:  MOVLW  1B
-17DB:  MOVWF  53
-17DC:  MOVLP  00
-17DD:  MOVLB  00
-17DE:  CALL   6CF
-17DF:  MOVLP  10
-17E0:  MOVLB  01
+17D4:  MOVLB  01
+17D5:  MOVF   69,W
+17D6:  MOVLB  02
+17D7:  MOVWF  52
+17D8:  MOVLW  1B
+17D9:  MOVWF  53
+17DA:  MOVLP  00
+17DB:  MOVLB  00
+17DC:  CALL   6CF
+17DD:  MOVLP  10
+17DE:  MOVLB  01
 ....................     } 
 ....................   restart_wdt(); 
-17E1:  CLRWDT
+17DF:  CLRWDT
 ....................   } 
-17E2:  INCF   68,F
-17E3:  GOTO   7A7
+17E0:  INCF   68,F
+17E1:  GOTO   7A5
 ....................   crlf(); 
-17E4:  MOVLP  00
-17E5:  MOVLB  00
-17E6:  CALL   457
-17E7:  MOVLP  10
+17E2:  MOVLP  00
+17E3:  MOVLB  00
+17E4:  CALL   457
+17E5:  MOVLP  10
 ....................   PROMPT_FLAG=1; 
-17E8:  MOVLB  01
-17E9:  BSF    65.0
+17E6:  MOVLB  01
+17E7:  BSF    65.0
 ....................   lcd_send(2,LCD_str); // Send DTMF on line 3 
-17EA:  MOVLW  02
-17EB:  MOVLB  02
-17EC:  MOVWF  4C
-17ED:  MOVLW  20
-17EE:  MOVWF  4E
-17EF:  MOVLW  7A
-17F0:  MOVWF  4D
-17F1:  MOVLP  08
-17F2:  MOVLB  00
-17F3:  CALL   10C
-17F4:  MOVLP  10
+17E8:  MOVLW  02
+17E9:  MOVLB  02
+17EA:  MOVWF  4C
+17EB:  MOVLW  20
+17EC:  MOVWF  4E
+17ED:  MOVLW  7A
+17EE:  MOVWF  4D
+17EF:  MOVLP  08
+17F0:  MOVLB  00
+17F1:  CALL   10C
+17F2:  MOVLP  10
 .................... } // }}} 
-17F5:  MOVLP  18
-17F6:  GOTO   784 (RETURN)
+17F3:  MOVLP  18
+17F4:  GOTO   784 (RETURN)
 .................... int _init_variables (int1 source) { // {{{ 
 ....................   int x; 
 ....................   int *regPtr; 
@@ -9481,7 +9494,6 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 0F1D:  RETURN
 .................... void ExecAuxInOp(char op,char arg,char ID) { // {{{ 
 ....................   int1 in_bit; 
-....................   int1 tmp_bit; 
 ....................   in_bit = AuxInSW[ID]!=0; 
 *
 168B:  MOVLB  02
@@ -9497,7 +9509,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 1695:  BTFSS  03.2
 1696:  BSF    2E.0
 ....................   char larg,uarg; // Lower and upper nibbles 
-....................   // Include arg[4] for COR4 emulation 
+....................   // Include arg[4] for COR5 emulation 
 ....................   larg = arg & 0x1F; 
 1697:  MOVF   2C,W
 1698:  ANDLW  1F
@@ -9515,10 +9527,10 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 16A2:  SUBWF  2B,W
 16A3:  ADDLW  FC
 16A4:  BTFSC  03.0
-16A5:  GOTO   6EA
+16A5:  GOTO   6E8
 16A6:  ADDLW  04
 16A7:  MOVLB  00
-16A8:  GOTO   6ED
+16A8:  GOTO   6EB
 .................... // Must add a method to reset the Enable_Mask to 0x0F when 
 .................... // the operator is not AUXI_ENABLE 
 ....................     case AUXI_ENABLE:  
@@ -9542,7 +9554,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................       } 
 ....................       break; 
 16B6:  MOVLB  02
-16B7:  GOTO   6EA
+16B7:  GOTO   6E8
 ....................     case AUXI_TAIL_WHEN_HI: 
 ....................       if ( in_bit ) { 
 16B8:  MOVLB  02
@@ -9561,7 +9573,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 16C1:  CLRF   72
 ....................       } 
 ....................     break; 
-16C2:  GOTO   6EA
+16C2:  GOTO   6E8
 ....................     case AUXI_TAIL_WHEN_LO: 
 ....................       if ( in_bit==0 ) { 
 16C3:  MOVLB  02
@@ -9580,49 +9592,42 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 16CC:  CLRF   72
 ....................       } 
 ....................     break; 
-16CD:  GOTO   6EA
+16CD:  GOTO   6E8
 ....................     case AUXI_EMULATE_COR: 
 ....................       int1 active_low = (arg & AUXI_EMULATE_COR_ACTIVE_LO) != 0; 
+....................       int1 tmp_bit = (active_low ^ in_bit); 
 16CE:  MOVLB  02
-16CF:  BCF    2E.2
+16CF:  BCF    2E.1
 16D0:  MOVF   2C,W
 16D1:  ANDLW  20
 16D2:  BTFSS  03.2
-16D3:  BSF    2E.2
-....................       tmp_bit = (active_low ^ in_bit); 
-16D4:  MOVLW  00
-16D5:  BTFSC  2E.2
-16D6:  MOVLW  01
+16D3:  BSF    2E.1
+*
 16D7:  MOVWF  32
-16D8:  MOVLW  00
-16D9:  BTFSC  2E.0
-16DA:  MOVLW  01
-16DB:  XORWF  32,W
+*
 16DC:  MOVWF  78
-16DD:  BCF    2E.1
+16DD:  BCF    2E.2
 16DE:  BTFSC  78.0
-16DF:  BSF    2E.1
+16DF:  BSF    2E.2
 ....................       if ( tmp_bit ) { 
-16E0:  BTFSS  2E.1
+16E0:  BTFSS  2E.2
 16E1:  GOTO   6E5
 ....................         COR_AUX |= larg; 
 16E2:  MOVF   2F,W
 16E3:  IORWF  71,F
 ....................       } else { 
-16E4:  GOTO   6E8
-....................         COR_AUX &= ~larg; 
-16E5:  MOVF   2F,W
-16E6:  XORLW  FF
-16E7:  ANDWF  71,F
+16E4:  GOTO   6E6
+....................         COR_AUX = 0; 
+16E5:  CLRF   71
 ....................       } 
 ....................     break; 
-16E8:  GOTO   6EA
-16E9:  MOVLB  02
+16E6:  GOTO   6E8
+16E7:  MOVLB  02
 ....................   } 
 .................... } // }}} 
-16EA:  MOVLP  18
-16EB:  MOVLB  00
-16EC:  GOTO   576 (RETURN)
+16E8:  MOVLP  18
+16E9:  MOVLB  00
+16EA:  GOTO   576 (RETURN)
 .................... void update_aux_in(void) { // {{{ 
 ....................   int x; 
 ....................   for(x=0;x<3;x++) { 
@@ -9979,7 +9984,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 1DBA:  MOVWF  2D
 1DBB:  MOVLP  10
 1DBC:  MOVLB  00
-1DBD:  CALL   6F5
+1DBD:  CALL   6F3
 1DBE:  MOVLP  18
 1DBF:  MOVLB  01
 ....................   } 
@@ -10233,7 +10238,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................       process_dtmf_interrupt(); 
 1F79:  MOVLP  10
 1F7A:  MOVLB  00
-1F7B:  GOTO   72E
+1F7B:  GOTO   72C
 1F7C:  MOVLP  18
 ....................       DTMF_INTERRUPT_FLAG=0; 
 1F7D:  MOVLB  01
@@ -10245,7 +10250,7 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................       print_dtmf_info(); 
 1F81:  MOVLP  10
 1F82:  MOVLB  00
-1F83:  GOTO   780
+1F83:  GOTO   77E
 1F84:  MOVLP  18
 ....................       DTMF_IN_FLAG=0; 
 1F85:  MOVLB  01
@@ -10488,112 +10493,112 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:41
 ....................   int value,dtmf_status; 
 ....................   dtmf_status = dtmf_read(CONTROL_REG); 
 *
-172E:  MOVLW  01
-172F:  MOVLB  02
-1730:  MOVWF  3D
-1731:  MOVLP  00
-1732:  MOVLB  00
-1733:  CALL   62D
-1734:  MOVLP  10
-1735:  MOVF   78,W
-1736:  MOVLB  01
-1737:  MOVWF  69
+172C:  MOVLW  01
+172D:  MOVLB  02
+172E:  MOVWF  3D
+172F:  MOVLP  00
+1730:  MOVLB  00
+1731:  CALL   62D
+1732:  MOVLP  10
+1733:  MOVF   78,W
+1734:  MOVLB  01
+1735:  MOVWF  69
 ....................   if ( dtmf_status & DTMF_BUFFER_FULL) { 
-1738:  BTFSS  69.2
-1739:  GOTO   77D
+1736:  BTFSS  69.2
+1737:  GOTO   77B
 ....................     value=dtmf_read(DATA_REG); 
-173A:  MOVLB  02
-173B:  CLRF   3D
-173C:  MOVLP  00
-173D:  MOVLB  00
-173E:  CALL   62D
-173F:  MOVLP  10
-1740:  MOVF   78,W
-1741:  MOVLB  01
-1742:  MOVWF  68
+1738:  MOVLB  02
+1739:  CLRF   3D
+173A:  MOVLP  00
+173B:  MOVLB  00
+173C:  CALL   62D
+173D:  MOVLP  10
+173E:  MOVF   78,W
+173F:  MOVLB  01
+1740:  MOVWF  68
 ....................     DTMF_IN_FLAG=1; 
-1743:  BSF    62.5
+1741:  BSF    62.5
 ....................     if ( value == dd ) { 
-1744:  MOVF   68,F
-1745:  BTFSS  03.2
-1746:  GOTO   74A
+1742:  MOVF   68,F
+1743:  BTFSS  03.2
+1744:  GOTO   748
 ....................       value=d0; 
-1747:  MOVLW  0A
-1748:  MOVWF  68
+1745:  MOVLW  0A
+1746:  MOVWF  68
 ....................     } else if ( value == d0 ) { 
-1749:  GOTO   74E
-174A:  MOVF   68,W
-174B:  SUBLW  0A
-174C:  BTFSC  03.2
+1747:  GOTO   74C
+1748:  MOVF   68,W
+1749:  SUBLW  0A
+174A:  BTFSC  03.2
 ....................       value=dd; 
-174D:  CLRF   68
+174B:  CLRF   68
 ....................     } 
 ....................     if ( value == ds ) { 
-174E:  MOVF   68,W
-174F:  SUBLW  0B
-1750:  BTFSC  03.2
+174C:  MOVF   68,W
+174D:  SUBLW  0B
+174E:  BTFSC  03.2
 ....................       CLEAR_DTMF_FLAG=1; 
-1751:  BSF    62.7
+174F:  BSF    62.7
 ....................     } 
 ....................     // Check for '#' 
 ....................     if ( value == dp ) { 
-1752:  MOVF   68,W
-1753:  SUBLW  0C
-1754:  BTFSS  03.2
-1755:  GOTO   75E
+1750:  MOVF   68,W
+1751:  SUBLW  0C
+1752:  BTFSS  03.2
+1753:  GOTO   75C
 ....................       DTMF_FLAG = 1; 
-1756:  BSF    62.4
+1754:  BSF    62.4
 ....................       DTMF_ptr->Last=1; 
-1757:  MOVF   40,W
-1758:  MOVWF  04
-1759:  MOVF   41,W
-175A:  MOVWF  05
-175B:  ADDFSR 00,FSR0
-175C:  BSF    00.5
+1755:  MOVF   40,W
+1756:  MOVWF  04
+1757:  MOVF   41,W
+1758:  MOVWF  05
+1759:  ADDFSR 00,FSR0
+175A:  BSF    00.5
 ....................     } else { 
-175D:  GOTO   77D
+175B:  GOTO   77B
 ....................       if ( DTMF_ptr <= &DTMF_ARRAY[DTMF_ARRAY_SIZE-1] ) { 
-175E:  MOVF   41,W
-175F:  SUBLW  20
-1760:  BTFSS  03.0
-1761:  GOTO   77D
-1762:  BTFSS  03.2
-1763:  GOTO   768
-1764:  MOVF   40,W
-1765:  SUBLW  6F
-1766:  BTFSS  03.0
-1767:  GOTO   77D
+175C:  MOVF   41,W
+175D:  SUBLW  20
+175E:  BTFSS  03.0
+175F:  GOTO   77B
+1760:  BTFSS  03.2
+1761:  GOTO   766
+1762:  MOVF   40,W
+1763:  SUBLW  6F
+1764:  BTFSS  03.0
+1765:  GOTO   77B
 ....................         DTMF_ptr->Key=value; 
-1768:  MOVF   40,W
-1769:  MOVWF  04
-176A:  MOVF   41,W
-176B:  MOVWF  05
-176C:  ADDFSR 00,FSR0
-176D:  MOVF   68,W
-176E:  ANDLW  0F
-176F:  MOVWF  77
-1770:  MOVLW  F0
-1771:  ANDWF  00,W
-1772:  IORWF  77,W
-1773:  MOVWF  00
+1766:  MOVF   40,W
+1767:  MOVWF  04
+1768:  MOVF   41,W
+1769:  MOVWF  05
+176A:  ADDFSR 00,FSR0
+176B:  MOVF   68,W
+176C:  ANDLW  0F
+176D:  MOVWF  77
+176E:  MOVLW  F0
+176F:  ANDWF  00,W
+1770:  IORWF  77,W
+1771:  MOVWF  00
 ....................         DTMF_ptr->Strobe=1; 
-1774:  MOVF   40,W
-1775:  MOVWF  04
-1776:  MOVF   41,W
-1777:  MOVWF  05
-1778:  ADDFSR 00,FSR0
-1779:  BSF    00.4
+1772:  MOVF   40,W
+1773:  MOVWF  04
+1774:  MOVF   41,W
+1775:  MOVWF  05
+1776:  ADDFSR 00,FSR0
+1777:  BSF    00.4
 ....................         DTMF_ptr++; 
-177A:  INCF   40,F
-177B:  BTFSC  03.2
-177C:  INCF   41,F
+1778:  INCF   40,F
+1779:  BTFSC  03.2
+177A:  INCF   41,F
 ....................       } 
 ....................     } 
 ....................   } 
 .................... } // }}} 
-177D:  MOVLP  18
-177E:  MOVLB  00
-177F:  GOTO   77C (RETURN)
+177B:  MOVLP  18
+177C:  MOVLB  00
+177D:  GOTO   77C (RETURN)
 .................... void init_lcd(void) { // {{{ 
 .................... #define INIT 0x18 
 .................... #define MODE_SET 0x1C 

@@ -14,20 +14,27 @@
 #define MORSEID4	MCHAR('e')
 #define MORSEID5	MCHAR('h')
 
+// Controle de Fan
 #define AUXOUTOP0 AUX_OUT_FOLLOW_COR
 #define AUXOUTARG0 AUX_OUT_FOLLOW_COR_INVERT_OUTPUT | AUX_OUT_FOLLOW_COR_OFF_DELAY | AUX_OUT_FOLLOW_COR1 | AUX_OUT_FOLLOW_COR2 | AUX_OUT_FOLLOW_COR3 | AUX_OUT_FOLLOW_COR4
+
+// Sortie relais 12V pour power-cycle
 #define AUXOUTOP1 0
 #define AUXOUTARG1 0
+
+// Non-utilise
 #define AUXOUTOP2 0
 #define AUXOUTARG2 0
 
-//#define AUXINOP0 AUXI_ENABLE
-//#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
-// AuxIn1 used by AuxOut 1
-#define AUXINOP0  AUXI_EMULATE_COR
-#define AUXINARG0 AUXI_EMULATE_COR_ACTIVE_LO|AUXI_EMULATE_COR4
-#define AUXINOP1 AUXI_TAIL_WHEN_HI
+// Entree COR auxiliaire
+#define AUXINOP0  0
+#define AUXINARG0 0
+
+// Tail panne d'hydro
+#define AUXINOP1 AUXI_TAIL_WHEN_LO
 #define AUXINARG1 MCHAR('b')
+
+// Non-utilise.
 #define AUXINOP2  0
 #define AUXINARG2 0
 

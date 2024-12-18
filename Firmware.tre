@@ -1897,7 +1897,7 @@
    ³  ³  ÃÄ@const502  0/4  Ram=0
    ³  ³  ÃÄ@WRITEBITA  0/34  Ram=6
    ³  ³  ÃÄ@WRITEBITA  0/34  Ram=6
-   ³  ³  ÃÄExecAuxInOp  2/98  Ram=6
+   ³  ³  ÃÄExecAuxInOp  2/96  Ram=6
    ³  ³  ³  ÀÄ@goto12638  2/8  Ram=0
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1
    ³  ³  ÃÄ@SPRINTF  1/15  Ram=1

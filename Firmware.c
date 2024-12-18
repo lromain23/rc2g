@@ -66,7 +66,9 @@ int1 read_cor_in_ports (void) { // {{{
   unsigned int LAST_COR_IN;
   LAST_COR_IN = COR_IN;
   COR_IN_HW   = ((input_b() ^ Polarity)&0x0F);
-  COR_IN      = COR_IN_HW | (COR_EMUL & 0x1F) | (COR_AUX&0x0F);
+  // COR_EMUL is set over DTMF using 'set cor <value>'
+  // COR_AUX is set using AUXI_EMULATE_COR from Site_XX.h
+  COR_IN      = COR_IN_HW | (COR_EMUL & 0x1F) | (COR_AUX & 0x0F);
   if ( LAST_COR_IN != COR_IN ) {
     return(1);
   } else {
@@ -623,10 +625,9 @@ void process_cor (void) { // {{{
   }
   // Clear the DTMF array when all CORs fall
   if ( !cor_in ) {
-    // --> Don't clear the DTMF if the Aux Input is emulating a COR
-    CLEAR_DTMF_FLAG=1;
-    COR_IN_EFFECTIVE=0;
-    TOT_FLAG_Mask=0;
+    CLEAR_DTMF_FLAG = 1;
+    COR_IN_EFFECTIVE = 0;
+    TOT_FLAG_Mask = 0;
   }
   // Refresh Link Time-out timer when COR is received.
   // Any COR value refreshes the link TOT timer.
@@ -1281,10 +1282,9 @@ char str_to_decimal(char *str) { // {{{
 } // }}}
 void ExecAuxInOp(char op,char arg,char ID) { // {{{
   int1 in_bit;
-  int1 tmp_bit;
   in_bit = AuxInSW[ID]!=0;
   char larg,uarg; // Lower and upper nibbles
-  // Include arg[4] for COR4 emulation
+  // Include arg[4] for COR5 emulation
   larg = arg & 0x1F;
   uarg = (arg & 0xF0) >> 4;
   switch(op) {
@@ -1315,11 +1315,11 @@ void ExecAuxInOp(char op,char arg,char ID) { // {{{
     break;
     case AUXI_EMULATE_COR:
       int1 active_low = (arg & AUXI_EMULATE_COR_ACTIVE_LO) != 0;
-      tmp_bit = (active_low ^ in_bit);
+      int1 tmp_bit = (active_low ^ in_bit);
       if ( tmp_bit ) {
         COR_AUX |= larg;
       } else {
-        COR_AUX &= ~larg;
+        COR_AUX = 0;
       }
     break;
   }
