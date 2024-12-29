@@ -1,6 +1,6 @@
-#define SITE_ID_VAL  	62
+#define SITE_ID_VAL  	72
 #define SITE_GID_VAL 	90
-#define POLARITY_DEF_VAL 0x0F 
+#define POLARITY_DEF_VAL 0x0E 
 #define ENABLE_DEFAULT 15
 #define TOT_MIN 5
 #define LINK_TOT 0

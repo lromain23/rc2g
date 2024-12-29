@@ -1,6 +1,6 @@
-CCS PCM C Compiler, Version 4.140, 64991               17-Dec-24 12:14
+CCS PCM C Compiler, Version 4.140, 64991               29-Dec-24 14:03
 
-               Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\62_St-Joseph\Firmware.lst
+               Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\72_St-Joseph\Firmware.lst
 
                ROM used:   8103 words (99%)
                            Largest free fragment is 58
@@ -3279,9 +3279,9 @@ CCS PCM C Compiler, Version 4.140, 64991               17-Dec-24 12:14
 .................... }; 
 ....................  
 .................... #include "SITE_XX.h" 
-.................... #define SITE_ID_VAL  	62 
+.................... #define SITE_ID_VAL  	72 
 .................... #define SITE_GID_VAL 	90 
-.................... #define POLARITY_DEF_VAL 0x0F  
+.................... #define POLARITY_DEF_VAL 0x0E  
 .................... #define ENABLE_DEFAULT 15 
 .................... #define TOT_MIN 5 
 .................... #define LINK_TOT 0 
@@ -3295,23 +3295,27 @@ CCS PCM C Compiler, Version 4.140, 64991               17-Dec-24 12:14
 .................... #define MORSEID4	MCHAR('e') 
 .................... #define MORSEID5	MCHAR('h') 
 ....................  
+.................... // Controle de Fan 
 .................... #define AUXOUTOP0 AUX_OUT_FOLLOW_COR 
 .................... #define AUXOUTARG0 AUX_OUT_FOLLOW_COR_INVERT_OUTPUT | AUX_OUT_FOLLOW_COR_OFF_DELAY | AUX_OUT_FOLLOW_COR1 | AUX_OUT_FOLLOW_COR2 | AUX_OUT_FOLLOW_COR3 | AUX_OUT_FOLLOW_COR4 
+....................  
+.................... // Sortie relais 12V pour power-cycle 
 .................... #define AUXOUTOP1 0 
 .................... #define AUXOUTARG1 0 
+....................  
+.................... // Non-utilise 
 .................... #define AUXOUTOP2 0 
 .................... #define AUXOUTARG2 0 
 ....................  
-.................... //#define AUXINOP0 AUXI_ENABLE 
-.................... //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4 
-.................... // AuxIn1 used by AuxOut 1 
+.................... // Entree COR auxiliaire 
+.................... #define AUXINOP0  0 
+.................... #define AUXINARG0 0 
 ....................  
-.................... #define AUXINOP0  AUXI_EMULATE_COR 
-.................... #define AUXINARG0 AUXI_EMULATE_COR_ACTIVE_LO|AUXI_EMULATE_COR5 
-....................  
+.................... // Tail panne d'hydro 
 .................... #define AUXINOP1 AUXI_TAIL_WHEN_LO 
 .................... #define AUXINARG1 MCHAR('b') 
 ....................  
+.................... // Non-utilise. 
 .................... #define AUXINOP2  0 
 .................... #define AUXINARG2 0 
 ....................  
