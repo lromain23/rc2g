@@ -1,4 +1,4 @@
-CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
+CCS PCM C Compiler, Version 4.140, 64991               07-Jan-25 17:40
 
                Filename:   C:\Users\m3n2bn\Projects\MBPAB IDE\RC2Gb\60_Master\Firmware.lst
 
@@ -3172,7 +3172,6 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... #define AUX_OUT1 PIN_C5 
 .................... #define AUX_OUT2 PIN_E2 
 ....................  
-....................  
 .................... #define COR0 PIN_B0 
 .................... #define COR1 PIN_B1 
 .................... #define COR2 PIN_B2 
@@ -3290,6 +3289,8 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... #define AUXOUTARG0 0 
 .................... #define AUXOUTOP1 0 
 .................... #define AUXOUTARG1 0 
+....................  
+.................... // Non-utilise 
 .................... #define AUXOUTOP2 0 
 .................... #define AUXOUTARG2 0 
 ....................  
@@ -3298,8 +3299,12 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... // AuxIn1 used by AuxOut 1 
 .................... #define AUXINOP0  0 
 .................... #define AUXINARG0 0 
-.................... #define AUXINOP1 AUXI_TAIL_WHEN_HI 
+....................  
+.................... // Tail panne d'hydro 
+.................... #define AUXINOP1 AUXI_TAIL_WHEN_LO 
 .................... #define AUXINARG1 MCHAR('b') 
+....................  
+.................... // Non-utilise. 
 .................... #define AUXINOP2  0 
 .................... #define AUXINARG2 0 
 ....................  
@@ -3307,10 +3312,15 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... #define PO_AUX_OUT1 1 
 .................... #define PO_AUX_OUT2 1 
 ....................  
-.................... #define RX1_PTT 0x0E 
-.................... #define RX2_PTT 0x0D 
-.................... #define RX3_PTT 0x0B 
-.................... #define RX4_PTT 0x07 
+.................... #define RX1_PTT 0x0F 
+.................... #define RX2_PTT 0x0F 
+.................... #define RX3_PTT 0x0F 
+.................... #define RX4_PTT 0x0F 
+....................  
+.................... #define R1Priority 4 
+.................... #define R2Priority 6 
+.................... #define R3Priority 6 
+.................... #define R4Priority 2 
 ....................  
 .................... // Define default variables {{{ 
 .................... #ifdef LCD_TYPE_PI 
@@ -3333,6 +3343,18 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... #endif 
 .................... #ifndef RX4_PTT 
 ....................   #define RX4_PTT 0x07 
+.................... #endif 
+.................... #ifndef R1Priority 
+....................   #define R1Priority 4 
+.................... #endif 
+.................... #ifndef R2Priority 
+....................   #define R2Priority 6 
+.................... #endif 
+.................... #ifndef R3Priority 
+....................   #define R3Priority 6 
+.................... #endif 
+.................... #ifndef R4Priority 
+....................   #define R4Priority 2 
 .................... #endif 
 .................... #ifndef DEFAULT_GAIN 
 ....................   #define DEFAULT_GAIN 32 
@@ -3370,10 +3392,10 @@ CCS PCM C Compiler, Version 4.140, 64991               13-Dec-24 16:48
 .................... 	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC}, 
 .................... 	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC}, 
 .................... 	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC}, 
-.................... 	{&RXPriority[0] ,4               , EEPROM,PROTECTED}, 
-.................... 	{&RXPriority[1] ,6               , EEPROM,PROTECTED}, 
-.................... 	{&RXPriority[2] ,6               , EEPROM,PROTECTED}, 
-.................... 	{&RXPriority[3] ,2               , EEPROM,PROTECTED}, 
+.................... 	{&RXPriority[0] ,R1Priority     , EEPROM,PROTECTED}, 
+.................... 	{&RXPriority[1] ,R2Priority     , EEPROM,PROTECTED}, 
+.................... 	{&RXPriority[2] ,R3Priority     , EEPROM,PROTECTED}, 
+.................... 	{&RXPriority[3] ,R4Priority     , EEPROM,PROTECTED}, 
 .................... 	{&RX_PTT[0]     ,RX1_PTT         , EEPROM,PROTECTED}, 
 .................... 	{&RX_PTT[1]     ,RX2_PTT         , EEPROM,PROTECTED}, 
 .................... 	{&RX_PTT[2]     ,RX3_PTT         , EEPROM,PROTECTED}, 
