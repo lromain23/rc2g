@@ -394,7 +394,6 @@ int1       rs232_mode;
 #define AUX_OUT1 PIN_C5
 #define AUX_OUT2 PIN_E2
 
-
 #define COR0 PIN_B0
 #define COR1 PIN_B1
 #define COR2 PIN_B2
@@ -514,6 +513,18 @@ char const reg_name[][REG_NAME_SIZE]={
 #ifndef RX4_PTT
   #define RX4_PTT 0x07
 #endif
+#ifndef R1Priority
+  #define R1Priority 4
+#endif
+#ifndef R2Priority
+  #define R2Priority 6
+#endif
+#ifndef R3Priority
+  #define R3Priority 6
+#endif
+#ifndef R4Priority
+  #define R4Priority 2
+#endif
 #ifndef DEFAULT_GAIN
   #define DEFAULT_GAIN 32
 #endif
@@ -550,10 +561,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC},
 	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC},
 	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC},
-	{&RXPriority[0] ,4               , EEPROM,PROTECTED},
-	{&RXPriority[1] ,6               , EEPROM,PROTECTED},
-	{&RXPriority[2] ,6               , EEPROM,PROTECTED},
-	{&RXPriority[3] ,2               , EEPROM,PROTECTED},
+	{&RXPriority[0] ,R1Priority     , EEPROM,PROTECTED},
+	{&RXPriority[1] ,R2Priority     , EEPROM,PROTECTED},
+	{&RXPriority[2] ,R3Priority     , EEPROM,PROTECTED},
+	{&RXPriority[3] ,R4Priority     , EEPROM,PROTECTED},
 	{&RX_PTT[0]     ,RX1_PTT         , EEPROM,PROTECTED},
 	{&RX_PTT[1]     ,RX2_PTT         , EEPROM,PROTECTED},
 	{&RX_PTT[2]     ,RX3_PTT         , EEPROM,PROTECTED},

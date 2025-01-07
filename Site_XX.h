@@ -46,3 +46,8 @@
 #define RX2_PTT 0x0F
 #define RX3_PTT 0x0F
 #define RX4_PTT 0x0F
+
+#define R1Priority 8
+#define R2Priority 6
+#define R3Priority 6
+#define R4Priority 4
