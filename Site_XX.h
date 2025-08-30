@@ -1,7 +1,7 @@
-#define SITE_ID_VAL  	60
+#define SITE_ID_VAL  	53
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
-#define ENABLE_DEFAULT 15
+#define ENABLE_DEFAULT 14
 #define TOT_MIN 5
 #define LINK_TOT 0
 #define DEFAULT_GAIN 32
@@ -16,12 +16,14 @@
 
 #define AUXOUTOP0 0
 #define AUXOUTARG0 0
-#define AUXOUTOP1 0
-#define AUXOUTARG1 0
 
-// Non-utilise
-#define AUXOUTOP2 0
-#define AUXOUTARG2 0
+// Fan Repeteur
+#define AUXOUTOP1 AUX_OUT_FOLLOW_PTT
+#define AUXOUTARG1 AUX_OUT_FOLLOW_PTT1 | AUX_OUT_FOLLOW_PTT_DELAY
+
+// Fan Lien
+#define AUXOUTOP2 AUX_OUT_FOLLOW_PTT
+#define AUXOUTARG2 AUX_OUT_FOLLOW_PTT2 | AUX_OUT_FOLLOW_PTT_DELAY
 
 //#define AUXINOP0 AUXI_ENABLE
 //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
@@ -37,16 +39,20 @@
 #define AUXINOP2  0
 #define AUXINARG2 0
 
-#define PO_AUX_OUT0 1
-#define PO_AUX_OUT1 1
-#define PO_AUX_OUT2 1
+#define PO_AUX_OUT0 0
+#define PO_AUX_OUT1 0
+#define PO_AUX_OUT2 0
 
-#define RX1_PTT 0x0F
-#define RX2_PTT 0x0F
-#define RX3_PTT 0x0F
+//
+// Radio1 : Repeteur
+// Radio2 : Lien prioritaire
+// Radio3 : Lien backup
+#define RX1_PTT 0x03
+#define RX2_PTT 0x01
+#define RX3_PTT 0x01
 #define RX4_PTT 0x0F
 
-#define R1Priority 4
+#define R1Priority 8
 #define R2Priority 6
-#define R3Priority 6
+#define R3Priority 4
 #define R4Priority 2

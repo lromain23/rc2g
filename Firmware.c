@@ -489,7 +489,7 @@ void process_dtmf(void) { // {{{
   // Set XO3(22) to 0       : 52 02 22 0 #
   // Set XO3(22) to 1       : 52 02 22 1 #
   // Change to pot 4        : 52 02 55 3 #
-  // Save Settings	    : 52 04 00 #
+  // Save Settings      : 52 04 00 #
   // Increment POT 01 by 3  : 52 06 01 3 #
   // Decrement POT 03 by 4  : 52 07 03 4 #
   // -- User Functions --
@@ -519,15 +519,15 @@ void process_dtmf(void) { // {{{
         case(10):
           argument = 0;
           value = 0x0E;
-	  command=SET_REG;
-  	      break;
+    command=SET_REG;
+          break;
         case(11):
           argument = 0;
           value = 0x0F;
-	  command=SET_REG;
-   		    break;
-	default:
-	  command=0;
+    command=SET_REG;
+           break;
+  default:
+    command=0;
       }
       // User function }}}
     }
@@ -609,8 +609,8 @@ void process_cor (void) { // {{{
         }
         cor_index=x+1;
         do_update_ptt=1;
-	TOT_FLAG_Mask=0;
-	QSO_Duration = 0;
+  TOT_FLAG_Mask=0;
+  QSO_Duration = 0;
         // COR_IN_EFFECTIVE points to the one that is selected
         COR_IN_EFFECTIVE=cor_mask;
       }
@@ -996,7 +996,8 @@ void initialize (void) { // {{{
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
   // Pin A7 --> ENTER button
-  set_tris_a(0b10000000);
+  // Pin A3:0 --> RX_EN
+  set_tris_a(0b10001111);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=30;
@@ -1236,7 +1237,36 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       // Upper argument (uarg) inverts the output (bitwise invert selection)
       AuxOut[ID] = ((AuxInSW & larg) ^ uarg)!=0;
     break;
-    case AUX_OUT_FOLLOW_COR: 
+    case AUX_OUT_FOLLOW_PTT: {
+      int1 ptt_active=0; 
+      int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_PTT_DELAY) !=0);
+      int1 disable_delay = (aux_out_trigger[ID] && disable_delay_en && (AuxOutDelayCnt != 0));
+      int1 pin_value=0;
+      char p;
+		  char ptt_mask=0x01;
+      for(p=0;p<4;p++) {
+        if ( (ptt_mask & larg)!=0 ) {
+  			  int1 ptt_int=(input(PTT_PIN[p])!=0);
+          if(ptt_int) {
+            ptt_active=1;                         
+					}
+        }
+				ptt_mask <<= 1;
+      }
+      if ( ptt_active ) {
+				if ( disable_delay_en ) {
+          AuxOutDelayCnt = 60;
+				}
+				pin_value=1;
+			  aux_out_trigger[ID]=1;
+      } else {
+        pin_value = disable_delay;
+				aux_out_trigger[ID]=pin_value;
+      }
+      AuxOut[ID] = pin_value;
+      break;
+  	}
+    case AUX_OUT_FOLLOW_COR: {
       // Invert AuxIn value if argument 1 is set
       // Check what is the effective COR_IN. Many COR_INs can be applied but 
       // Only one is really effective and used to drive PTTs
@@ -1258,16 +1288,17 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
           }
         } else {
           pin_value = 1;
-	  if ( disable_delay_en ) {
+          if ( disable_delay_en ) {
             AuxOutDelayCnt = 60;
-	  }
+          }
         }
       } else {
         pin_value = disable_delay;
       }
       AuxOut[ID] = pin_value ^ invert_output;
-    break;
-  }
+      break;
+  	  }
+    }
 } // }}}
 char str_to_decimal(char *str) { // {{{
   // Convert string to unsigned integer
@@ -1681,11 +1712,11 @@ void process_buttons(void) { // {{{
            rs232_mode = 1;
            set_trimpot(CurrentTrimPot, pot_value);
            pot_values_to_lcd();
-	   RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
+     RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
            rs232_mode = 0;
          }
          adj_value_b = adj_value_a;
-	     }
+       }
        if ( SELECT_PRESSED == 1 ) {
          CurrentTrimPot = (CurrentTrimPot + 1 ) & 0x03;
          pot_values_to_lcd();
@@ -1696,11 +1727,11 @@ void process_buttons(void) { // {{{
            store_variables();
          }
          button_state = BUTTON_IDLE;
-	     } 
+       } 
        status_led();
     break;
     default:
-  		button_state = BUTTON_IDLE;
+      button_state = BUTTON_IDLE;
     break;
   }
   restart_wdt();

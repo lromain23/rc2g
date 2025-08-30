@@ -11,6 +11,7 @@
 #fuses NOFCMEN
 #fuses NOIESO
 #fuses NODEBUG
+#opt compress
 #case
 
 #include <stddef.h>
@@ -34,6 +35,7 @@
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
+#use fast_io (a)
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
@@ -150,7 +152,21 @@ char admin_timer;
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define AUX_OUT_FOLLOW_PTT    0x03
 #define QSO_DURATION_DELAY 5
+
+// AuxOut FollowPtt Arguments
+// 7  6  5  4  3  2  1  0
+// ======================
+//             <PTT[3:0]>
+//          D 
+// PTT : Which PTT signals to follow
+// D   : Add 60s delay on PTT fall 
+#define AUX_OUT_FOLLOW_PTT1      0x01
+#define AUX_OUT_FOLLOW_PTT2      0x02
+#define AUX_OUT_FOLLOW_PTT3      0x04
+#define AUX_OUT_FOLLOW_PTT4      0x08
+#define AUX_OUT_FOLLOW_PTT_DELAY 0x10
 // This command operates the same way as AUX_OUT_FOLLOW_COR but
 // it extends the aux output by 1 minute.
 // Follow COR args:
@@ -327,6 +343,7 @@ int1 ENTER_PRESSED;
 int1 SELECT_PRESSED;
 int  adj_value_a,adj_value_b;
 char button_state;
+int1 aux_out_trigger[3]={0,0,0};
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
@@ -490,7 +507,7 @@ char const reg_name[][REG_NAME_SIZE]={
     {"CPOT"}  // 56
 };
 
-#include "SITE_XX.h"
+#include "Site_XX.h"
 // Define default variables {{{
 #ifdef LCD_TYPE_PI
   #define LCD_I2C_ADD 0x27
