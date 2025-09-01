@@ -472,10 +472,10 @@ void process_dtmf(void) { // {{{
   // 06 : Increment Current Pot
   // 07 : Decrement Current Pot
   // 08 : Status
-  // 09 : AdminSettings 
-  //    :    Args : 0 - Normal mode
-  //    :           1 - Enter Admin mode
-  //    :           2 - Reboot
+  // 09 : AdminSettings (Must use 2-digit arguments) 
+  //    :    Args : 00 - Normal mode
+  //    :           01 - Enter Admin mode
+  //    :           02 - Reboot
   // 10 : Disable Link Radio
   // 11 : Enable Link Radio
   // 12 : Send to I2C
@@ -483,19 +483,19 @@ void process_dtmf(void) { // {{{
   // 15 : ClearBit (*52 15 <reg> <bit>)
   // 
   // Ex: (# = 12)
-  // Enter Admin mode       : 52 09 01 #
-  // Reboot                 : 52 09 02 #
-  // Send Morse ID          : 52 09 03 #
-  // Set XO3(22) to 0       : 52 02 22 0 #
-  // Set XO3(22) to 1       : 52 02 22 1 #
-  // Change to pot 4        : 52 02 55 3 #
-  // Save Settings      : 52 04 00 #
-  // Increment POT 01 by 3  : 52 06 01 3 #
-  // Decrement POT 03 by 4  : 52 07 03 4 #
+  // Enter Admin mode       : 53 09 01 #
+  // Reboot                 : 53 09 02 #
+  // Send Morse ID          : 53 09 03 #
+  // Set XO3(22) to 0       : 53 02 22 0 #
+  // Set XO3(22) to 1       : 53 02 22 1 #
+  // Change to pot 4        : 53 02 55 3 #
+  // Save Settings					: 53 04 00 #
+  // Increment POT 01 by 3  : 53 06 01 3 #
+  // Decrement POT 03 by 4  : 53 07 03 4 #
   // -- User Functions --
-  // Disable AuxOut0        : 51 02 21 0 # 
-  // Disable AuxOut0 (!Arg) : 51 02 21 # 
-  // Enable  AuxOut1        : 51 02 22 1 #
+  // Disable AuxOut0        : 53 02 21 0 # 
+  // Disable AuxOut0 (!Arg) : 53 02 21 # 
+  // Enable  AuxOut1        : 53 02 22 1 #
   command=0;
   value=0;
   if ( ValidKeyRange(0,3)) {
@@ -979,11 +979,12 @@ void initialize (void) { // {{{
   // COR 3:0: Pins B3:B0
   // DTMF interrupt : PIN_B4 (No pull-up required)
   // PIN_B5 : Adjust trmipot. Nu pull-up required
-  // port_b_pullups(0b11000000 | (Polarity & 0x0F));
-  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  // port_b_pullups((0b11000000 | (Polarity & 0x0F)));
+  port_b_pullups(PIN_B6 | PIN_B7);
+//  WPUB = 0xC0 | ( Polarity & 0x0F);
   // Set WPUEN (bar) bit on OPTION_REG
   // Master Weak pull-up enable
-  WPUEN = 0;
+//  WPUEN = 0;
   // }}}
   // C7 : UART RX
   // C6 : UART TX
@@ -1239,33 +1240,34 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
     break;
     case AUX_OUT_FOLLOW_PTT: {
       int1 ptt_active=0; 
+      int1 invert_output = ((arg & AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT)!=0);
       int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_PTT_DELAY) !=0);
       int1 disable_delay = (aux_out_trigger[ID] && disable_delay_en && (AuxOutDelayCnt != 0));
       int1 pin_value=0;
       char p;
-		  char ptt_mask=0x01;
+      char ptt_mask=0x01;
       for(p=0;p<4;p++) {
         if ( (ptt_mask & larg)!=0 ) {
-  			  int1 ptt_int=(input(PTT_PIN[p])!=0);
+          int1 ptt_int=(input(PTT_PIN[p])!=0);
           if(ptt_int) {
             ptt_active=1;                         
-					}
+          }
         }
-				ptt_mask <<= 1;
+        ptt_mask <<= 1;
       }
       if ( ptt_active ) {
-				if ( disable_delay_en ) {
+        if ( disable_delay_en ) {
           AuxOutDelayCnt = 60;
-				}
-				pin_value=1;
-			  aux_out_trigger[ID]=1;
+        }
+        pin_value=1;
+        aux_out_trigger[ID]=1;
       } else {
         pin_value = disable_delay;
-				aux_out_trigger[ID]=pin_value;
+        aux_out_trigger[ID]=pin_value;
       }
-      AuxOut[ID] = pin_value;
+      AuxOut[ID] = pin_value ^ invert_output;
       break;
-  	}
+    }
     case AUX_OUT_FOLLOW_COR: {
       // Invert AuxIn value if argument 1 is set
       // Check what is the effective COR_IN. Many COR_INs can be applied but 
@@ -1297,7 +1299,7 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       }
       AuxOut[ID] = pin_value ^ invert_output;
       break;
-  	  }
+      }
     }
 } // }}}
 char str_to_decimal(char *str) { // {{{
