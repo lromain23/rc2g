@@ -472,10 +472,10 @@ void process_dtmf(void) { // {{{
   // 06 : Increment Current Pot
   // 07 : Decrement Current Pot
   // 08 : Status
-  // 09 : AdminSettings 
-  //    :    Args : 0 - Normal mode
-  //    :           1 - Enter Admin mode
-  //    :           2 - Reboot
+  // 09 : AdminSettings (Must use 2-digit arguments) 
+  //    :    Args : 00 - Normal mode
+  //    :           01 - Enter Admin mode
+  //    :           02 - Reboot
   // 10 : Disable Link Radio
   // 11 : Enable Link Radio
   // 12 : Send to I2C
@@ -980,10 +980,11 @@ void initialize (void) { // {{{
   // DTMF interrupt : PIN_B4 (No pull-up required)
   // PIN_B5 : Adjust trmipot. Nu pull-up required
   // port_b_pullups(0b11000000 | (Polarity & 0x0F));
-  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  port_b_pullups(PIN_B6 | PIN_B7);
+  // WPUB = 0b11000000 | ( Polarity & 0x0F);
   // Set WPUEN (bar) bit on OPTION_REG
   // Master Weak pull-up enable
-  WPUEN = 0;
+  // WPUEN = 0;
   // }}}
   // C7 : UART RX
   // C6 : UART TX
@@ -1239,6 +1240,7 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
     break;
     case AUX_OUT_FOLLOW_PTT: {
       int1 ptt_active=0; 
+      int1 invert_output = ((arg & AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT)!=0);
       int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_PTT_DELAY) !=0);
       int1 disable_delay = (aux_out_trigger[ID] && disable_delay_en && (AuxOutDelayCnt != 0));
       int1 pin_value=0;
@@ -1263,7 +1265,7 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
         pin_value = disable_delay;
         aux_out_trigger[ID]=pin_value;
       }
-      AuxOut[ID] = pin_value;
+      AuxOut[ID] = pin_value ^ invert_output;
       break;
     }
     case AUX_OUT_FOLLOW_COR: {

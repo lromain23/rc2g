@@ -160,13 +160,16 @@ char admin_timer;
 // ======================
 //             <PTT[3:0]>
 //          D 
+//       I
 // PTT : Which PTT signals to follow
 // D   : Add 60s delay on PTT fall 
-#define AUX_OUT_FOLLOW_PTT1      0x01
-#define AUX_OUT_FOLLOW_PTT2      0x02
-#define AUX_OUT_FOLLOW_PTT3      0x04
-#define AUX_OUT_FOLLOW_PTT4      0x08
-#define AUX_OUT_FOLLOW_PTT_DELAY 0x10
+// I	 : Invert output (Use this to drive a fan when PTT is active)
+#define AUX_OUT_FOLLOW_PTT1              0x01
+#define AUX_OUT_FOLLOW_PTT2              0x02
+#define AUX_OUT_FOLLOW_PTT3              0x04
+#define AUX_OUT_FOLLOW_PTT4              0x08
+#define AUX_OUT_FOLLOW_PTT_DELAY         0x10
+#define AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT 0x20
 // This command operates the same way as AUX_OUT_FOLLOW_COR but
 // it extends the aux output by 1 minute.
 // Follow COR args:
@@ -404,6 +407,7 @@ int1       rs232_mode;
 #define ST_COL   0x08
 #define LCD_ENABLE
 
+// PIN_B5 used for Potentiometer
 #define AUX_IN0  PIN_B6
 #define AUX_IN1  PIN_B7
 #define AUX_IN2  PIN_C0
