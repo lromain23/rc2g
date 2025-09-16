@@ -1,4 +1,4 @@
-CCS PCM C Compiler, Version 5.121, 5277               01-Sep-25 07:47
+CCS PCM C Compiler, Version 5.121, 5277               15-Sep-25 23:13
 
                Filename:   /home/luc/Projects/RC2G/VerB/53_Donaldson/Firmware.lst
 
@@ -209,7 +209,7 @@ CCS PCM C Compiler, Version 5.121, 5277               01-Sep-25 07:47
 00B7:  RETLW  01
 00B8:  RETLW  26
 00B9:  RETLW  20
-00BA:  RETLW  01
+00BA:  RETLW  00
 00BB:  RETLW  01
 00BC:  RETLW  27
 00BD:  RETLW  20
@@ -5100,7 +5100,7 @@ CCS PCM C Compiler, Version 5.121, 5277               01-Sep-25 07:47
 .................... #define AUXINOP2  0
 .................... #define AUXINARG2 0
 .................... 
-.................... #define PO_AUX_OUT0 1
+.................... #define PO_AUX_OUT0 0
 .................... #define PO_AUX_OUT1 0
 .................... #define PO_AUX_OUT2 0
 .................... 
@@ -9545,8 +9545,8 @@ CCS PCM C Compiler, Version 5.121, 5277               01-Sep-25 07:47
 0BF7:  MOVWF  0E
 ....................   // Pin A7 --> ENTER button
 ....................   // Pin A3:0 --> RX_EN
-....................   set_tris_a(0b10001111);
-0BF8:  MOVLW  8F
+....................   set_tris_a(0b10000000);
+0BF8:  MOVLW  80
 0BF9:  MOVWF  0C
 ....................   init_trimpot();
 ....................   // Initialize RTC

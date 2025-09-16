@@ -998,7 +998,7 @@ void initialize (void) { // {{{
   set_tris_c(0b10011101);
   // Pin A7 --> ENTER button
   // Pin A3:0 --> RX_EN
-  set_tris_a(0b10001111);
+  set_tris_a(0b10000000);
   init_trimpot();
   // Initialize RTC
   rtcc_cnt=30;

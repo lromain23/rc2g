@@ -49,7 +49,7 @@
 #define AUXINOP2  0
 #define AUXINARG2 0
 
-#define PO_AUX_OUT0 1
+#define PO_AUX_OUT0 0
 #define PO_AUX_OUT1 0
 #define PO_AUX_OUT2 0
 
