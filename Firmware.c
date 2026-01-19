@@ -322,7 +322,6 @@ void set_trimpot(pot,value) { // {{{
   i2c_stop();  
   crlf();
   printf("Pot(%u)<=%u",pot,value);
-
 } // }}}
 void morse (int c) { // {{{
   int mc;
@@ -714,7 +713,6 @@ void pot_values_to_lcd (void) { // {{{
   lcd_send(0,LCD_str); // COR/PTT on line 0
   crlf();
   printf("%s",LCD_str);
-
 } // }}}
 void prompt(void) { // {{{
   if ( AdminMode ) {
@@ -940,7 +938,8 @@ void initialize (void) { // {{{
 // power-up
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
-  setup_wdt(WDT_2S);
+  setup_wdt(WDT_ON|WDT_2S);
+  printf ("\n\rPCON:%u",PCON);
   PROCESS_COR_FLAG=0;
   COR_IN_FLAG=0;
   COR_IN=0;
@@ -966,11 +965,15 @@ void initialize (void) { // {{{
   output_bit(DTMF_WEB,1);
   output_bit(DTMF_REB,1);
   output_bit(DTMF_RS ,0);
+#ifdef LCD_TYPE_PI
+  init_lcd();
+#endif
   //clearscr();
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  QSO_Duration = 0;
   // Port B Pullups {{{
   // AuxIn pins : B6, B7, C0
   // Port_x_pullups requires a bit value corresponding to each
@@ -1023,9 +1026,6 @@ void initialize (void) { // {{{
   set_admin_mode(0);
   rs232_mode=0;
   button_state=0;
-#ifdef LCD_TYPE_PI
-  init_lcd();
-#endif
   setup_adc(ADC_CLOCK_INTERNAL);
   setup_adc_ports(ADJ_POT|VSS_VDD);
   set_adc_channel(13);
@@ -1371,13 +1371,14 @@ void update_aux_out(void) { // {{{
   char AuxIn_s[4]={'0','0','0',0};
   char AuxOut_s[4]={'0','0','0',0};
   char ADM[]=" ADMIN";
-  int1 out_bit;
-
+  short out_bit;
   for(x=0;x<3;x++) {
     AuxOp = AuxOutOp[x];
     AuxArg = AuxOutArg[x];
     ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
     out_bit = (AuxOut[x])==0;
+// Bug is here!!!
+// New compiler : AUX_OUT_PIN cannot be a const.
     output_bit(AUX_OUT_PIN[x],out_bit);
     if(out_bit==0) {
       AuxOut_s[x]='1';
@@ -1415,6 +1416,7 @@ void send_morse_id (void) { // {{{
   delay_ms(1000);
   PROCESS_COR_FLAG=1;
 } // }}}
+
 void main (void) { // {{{
   initialize();
 #ignore_warnings 203
