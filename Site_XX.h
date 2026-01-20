@@ -25,13 +25,12 @@
 
 //#define AUXINOP0 AUXI_ENABLE
 //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
-// AuxIn1 used by AuxOut 1
-#define AUXINOP0  0
-#define AUXINARG0 0
-
 // Tail panne d'hydro
-#define AUXINOP1 AUXI_TAIL_WHEN_LO
-#define AUXINARG1 MCHAR('b')
+#define AUXINOP0  AUXI_TAIL_WHEN_LO
+#define AUXINARG0 MCHAR('b')
+
+#define AUXINOP1  0
+#define AUXINARG1 0
 
 // Non-utilise.
 #define AUXINOP2  0

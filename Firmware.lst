@@ -1,4 +1,4 @@
-CCS PCM C Compiler, Version 5.121, 5277               19-Jan-26 09:17
+CCS PCM C Compiler, Version 5.121, 5277               20-Jan-26 08:44
 
                Filename:   /home/luc/Projects/RC2G/VerB/54_BoisFranc/Firmware.lst
 
@@ -301,11 +301,11 @@ CCS PCM C Compiler, Version 5.121, 5277               19-Jan-26 09:17
 0113:  RETLW  03
 0114:  RETLW  3D
 0115:  RETLW  20
-0116:  RETLW  00
+0116:  RETLW  02
 0117:  RETLW  03
 0118:  RETLW  3E
 0119:  RETLW  20
-011A:  RETLW  02
+011A:  RETLW  00
 011B:  RETLW  03
 011C:  RETLW  3F
 011D:  RETLW  20
@@ -313,11 +313,11 @@ CCS PCM C Compiler, Version 5.121, 5277               19-Jan-26 09:17
 011F:  RETLW  03
 0120:  RETLW  40
 0121:  RETLW  20
-0122:  RETLW  00
+0122:  RETLW  0B
 0123:  RETLW  03
 0124:  RETLW  41
 0125:  RETLW  20
-0126:  RETLW  0B
+0126:  RETLW  00
 0127:  RETLW  03
 0128:  RETLW  42
 0129:  RETLW  20
@@ -5070,13 +5070,12 @@ CCS PCM C Compiler, Version 5.121, 5277               19-Jan-26 09:17
 .................... 
 .................... //#define AUXINOP0 AUXI_ENABLE
 .................... //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
-.................... // AuxIn1 used by AuxOut 1
-.................... #define AUXINOP0  0
-.................... #define AUXINARG0 0
-.................... 
 .................... // Tail panne d'hydro
-.................... #define AUXINOP1 AUXI_TAIL_WHEN_LO
-.................... #define AUXINARG1 MCHAR('b')
+.................... #define AUXINOP0  AUXI_TAIL_WHEN_LO
+.................... #define AUXINARG0 MCHAR('b')
+.................... 
+.................... #define AUXINOP1  0
+.................... #define AUXINARG1 0
 .................... 
 .................... // Non-utilise.
 .................... #define AUXINOP2  0
