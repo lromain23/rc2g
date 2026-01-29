@@ -322,7 +322,6 @@ void set_trimpot(pot,value) { // {{{
   i2c_stop();  
   crlf();
   printf("Pot(%u)<=%u",pot,value);
-
 } // }}}
 void morse (int c) { // {{{
   int mc;
@@ -369,6 +368,8 @@ void update_ptt(int cor) { // {{{
   int ptt;
   char COR_s[5]={'0','0','0','0',0};
   char PTT_s[5]={'0','0','0','0',0};
+  char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
+  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -714,7 +715,6 @@ void pot_values_to_lcd (void) { // {{{
   lcd_send(0,LCD_str); // COR/PTT on line 0
   crlf();
   printf("%s",LCD_str);
-
 } // }}}
 void prompt(void) { // {{{
   if ( AdminMode ) {
@@ -940,7 +940,7 @@ void initialize (void) { // {{{
 // power-up
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
-  setup_wdt(WDT_2S);
+  setup_wdt(WDT_ON|WDT_2S);
   PROCESS_COR_FLAG=0;
   COR_IN_FLAG=0;
   COR_IN=0;
@@ -966,11 +966,15 @@ void initialize (void) { // {{{
   output_bit(DTMF_WEB,1);
   output_bit(DTMF_REB,1);
   output_bit(DTMF_RS ,0);
+#ifdef LCD_TYPE_PI
+  init_lcd();
+#endif
   //clearscr();
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  QSO_Duration = 0;
   // Port B Pullups {{{
   // AuxIn pins : B6, B7, C0
   // Port_x_pullups requires a bit value corresponding to each
@@ -1023,9 +1027,6 @@ void initialize (void) { // {{{
   set_admin_mode(0);
   rs232_mode=0;
   button_state=0;
-#ifdef LCD_TYPE_PI
-  init_lcd();
-#endif
   setup_adc(ADC_CLOCK_INTERNAL);
   setup_adc_ports(ADJ_POT|VSS_VDD);
   set_adc_channel(13);
@@ -1246,6 +1247,7 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       int1 pin_value=0;
       char p;
       char ptt_mask=0x01;
+		  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
       for(p=0;p<4;p++) {
         if ( (ptt_mask & larg)!=0 ) {
           int1 ptt_int=(input(PTT_PIN[p])!=0);
@@ -1359,6 +1361,7 @@ void ExecAuxInOp(char op,char arg,char ID) { // {{{
 } // }}}
 void update_aux_in(void) { // {{{
   int x;
+  char AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
   for(x=0;x<3;x++) {
     // AuxIn is enabled via RS232 only for test/emulation purpose
     AuxInSW[x] = ((input(AUX_IN_PIN[x])!=0 )|| (AuxIn[x]!=0));
@@ -1371,13 +1374,15 @@ void update_aux_out(void) { // {{{
   char AuxIn_s[4]={'0','0','0',0};
   char AuxOut_s[4]={'0','0','0',0};
   char ADM[]=" ADMIN";
-  int1 out_bit;
-
+  char AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
+  short out_bit;
   for(x=0;x<3;x++) {
     AuxOp = AuxOutOp[x];
     AuxArg = AuxOutArg[x];
     ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
     out_bit = (AuxOut[x])==0;
+// Bug is here!!!
+// New compiler : AUX_OUT_PIN cannot be a const.
     output_bit(AUX_OUT_PIN[x],out_bit);
     if(out_bit==0) {
       AuxOut_s[x]='1';
@@ -1415,6 +1420,7 @@ void send_morse_id (void) { // {{{
   delay_ms(1000);
   PROCESS_COR_FLAG=1;
 } // }}}
+
 void main (void) { // {{{
   initialize();
 #ignore_warnings 203
@@ -1585,6 +1591,16 @@ void do_delay_counters(void) {
       QSO_Duration++; 
     }
     AUX_OUT_FLAG=1;
+    // Update COR PullUps {{{
+    int x;
+    for(x=0;x<4;x++) {
+      if(bit_test(Polarity,x)) {
+        bit_set(WPUB,x);
+      } else {
+        bit_clear(WPUB,x);
+      }
+    }
+    // }}}
     // Time Out PTT {{{
     if ( (TOT_Min > 0) && (QSO_Duration >= (TOT_Min*60))) {
       if ( TOT_FLAG_Mask == 0 ) {
