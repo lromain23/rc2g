@@ -6,7 +6,6 @@
 #define LINK_TOT 0
 #define DEFAULT_GAIN 32
 //#define LCD_TYPE_PI 0
-
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('a')
 #define MORSEID2	2
@@ -18,6 +17,8 @@
 #define AUXOUTARG0 0
 #define AUXOUTOP1 0
 #define AUXOUTARG1 0
+
+// Non-utilise
 #define AUXOUTOP2 0
 #define AUXOUTARG2 0
 
@@ -26,8 +27,12 @@
 // AuxIn1 used by AuxOut 1
 #define AUXINOP0  0
 #define AUXINARG0 0
-#define AUXINOP1 AUXI_TAIL_WHEN_HI
+
+// Tail panne d'hydro
+#define AUXINOP1 AUXI_TAIL_WHEN_LO
 #define AUXINARG1 MCHAR('b')
+
+// Non-utilise.
 #define AUXINOP2  0
 #define AUXINARG2 0
 
@@ -35,7 +40,12 @@
 #define PO_AUX_OUT1 1
 #define PO_AUX_OUT2 1
 
-#define RX1_PTT 0x0F
-#define RX2_PTT 0x0F
-#define RX3_PTT 0x0F
-#define RX4_PTT 0x0F
+#define RX1_PTT 0x0E
+#define RX2_PTT 0x0D
+#define RX3_PTT 0x0B
+#define RX4_PTT 0x07
+
+#define R1Priority 4
+#define R2Priority 6
+#define R3Priority 6
+#define R4Priority 2
