@@ -1,4 +1,4 @@
-CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
+CCS PCM C Compiler, Version 5.123, 5277               09-Feb-26 13:50
 
                Filename:   /home/luc/Projects/RC2G/VerB/60_Master/Firmware.lst
 
@@ -10792,7 +10792,7 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 1A69:  ANDWF  37,W
 1A6A:  BTFSC  03.2
 1A6B:  GOTO   281
-....................           int1 ptt_int=(input(PTT_PIN[p])!=0);
+....................           int1 ptt_int=(input(PTT_PIN[p]));
 1A6C:  MOVLW  BC
 1A6D:  ADDWF  3A,W
 1A6E:  MOVLP  00
@@ -11243,7 +11243,7 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 1737:  BTFSS  03.0
 1738:  GOTO   768
 ....................     // AuxIn is enabled via RS232 only for test/emulation purpose
-....................     AuxInSW[x] = ((input(AUX_IN_PIN[x])!=0 )|| (AuxIn[x]!=0));
+....................     AuxInSW[x] = ((input(AUX_IN_PIN[x]) )|| (AuxIn[x]!=0));
 1739:  MOVLW  23
 173A:  ADDWF  6D,W
 173B:  MOVWF  78
@@ -11253,14 +11253,14 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 173F:  INCF   7A,F
 1740:  MOVF   78,W
 1741:  MOVLB  02
-1742:  MOVWF  24
+1742:  MOVWF  22
 1743:  MOVF   7A,W
-1744:  MOVWF  25
+1744:  MOVWF  23
 1745:  MOVLW  9E
 1746:  CALL   76B
 1747:  MOVF   00,W
 1748:  MOVLB  02
-1749:  MOVWF  26
+1749:  MOVWF  24
 174A:  MOVWF  45
 174B:  CLRF   47
 174C:  CLRF   46
@@ -11281,12 +11281,12 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 175B:  MOVLW  01
 175C:  MOVLB  01
 175D:  MOVLB  02
-175E:  MOVWF  27
-175F:  MOVF   25,W
+175E:  MOVWF  24
+175F:  MOVF   23,W
 1760:  MOVWF  05
-1761:  MOVF   24,W
+1761:  MOVF   22,W
 1762:  MOVWF  04
-1763:  MOVF   27,W
+1763:  MOVF   24,W
 1764:  MOVWF  00
 1765:  MOVLB  01
 1766:  INCF   6D,F
@@ -12574,7 +12574,7 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 0CE1:  ANDLW  0F
 0CE2:  MOVLB  01
 0CE3:  MOVWF  6F
-....................   if ( input(ENTER_BUTTON)==0 ) {
+....................   if ( !input(ENTER_BUTTON) ) {
 0CE4:  MOVLB  00
 0CE5:  BTFSC  0C.7
 0CE6:  GOTO   4F3
@@ -12601,7 +12601,7 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 ....................     ENTER_PRESSED = 0;
 0CF5:  BCF    32.3
 ....................   }
-....................   if ( input(SELECT_BUTTON)==0 ) {
+....................   if ( !input(SELECT_BUTTON) ) {
 0CF6:  MOVLB  00
 0CF7:  BTFSC  10.3
 0CF8:  GOTO   505
@@ -12761,7 +12761,7 @@ CCS PCM C Compiler, Version 5.123, 5277               29-Jan-26 08:25
 0D5D:  BTFSS  32.3
 0D5E:  GOTO   567
 ....................          // Hold SELECT and press ENTER to store settings in EEPROM
-....................          if ( input(SELECT_BUTTON)==0 ) {
+....................          if ( !input(SELECT_BUTTON) ) {
 0D5F:  MOVLB  00
 0D60:  BTFSC  10.3
 0D61:  GOTO   565

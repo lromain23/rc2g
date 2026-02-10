@@ -1250,7 +1250,7 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
 		  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
       for(p=0;p<4;p++) {
         if ( (ptt_mask & larg)!=0 ) {
-          int1 ptt_int=(input(PTT_PIN[p])!=0);
+          int1 ptt_int=(input(PTT_PIN[p]));
           if(ptt_int) {
             ptt_active=1;                         
           }
@@ -1364,7 +1364,7 @@ void update_aux_in(void) { // {{{
   char AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
   for(x=0;x<3;x++) {
     // AuxIn is enabled via RS232 only for test/emulation purpose
-    AuxInSW[x] = ((input(AUX_IN_PIN[x])!=0 )|| (AuxIn[x]!=0));
+    AuxInSW[x] = ((input(AUX_IN_PIN[x]) )|| (AuxIn[x]!=0));
   }
 } // }}}
 void update_aux_out(void) { // {{{
@@ -1688,7 +1688,7 @@ void process_buttons(void) { // {{{
   CPotPtr=CurrentTrimPot & 0x03;
   // Process Enter / select buttons {{{
   _cor_in = (COR_IN | COR_EMUL ) & 0x0F;
-  if ( input(ENTER_BUTTON)==0 ) {
+  if ( !input(ENTER_BUTTON) ) {
     ENTER_PRESSED = (enter_b == DEBOUNCE_COUNT);
     if ( enter_b < DEBOUNCE_COUNT+ 1 ) {
       enter_b++; 
@@ -1697,7 +1697,7 @@ void process_buttons(void) { // {{{
     enter_b = 0;
     ENTER_PRESSED = 0;
   }
-  if ( input(SELECT_BUTTON)==0 ) {
+  if ( !input(SELECT_BUTTON) ) {
     SELECT_PRESSED = (select_b == DEBOUNCE_COUNT);
     if ( select_b < DEBOUNCE_COUNT + 1 ) {
       select_b++;
@@ -1741,7 +1741,7 @@ void process_buttons(void) { // {{{
        }
        if ( ENTER_PRESSED == 1 ) {
          // Hold SELECT and press ENTER to store settings in EEPROM
-         if ( input(SELECT_BUTTON)==0 ) {
+         if ( !input(SELECT_BUTTON) ) {
            store_variables();
          }
          button_state = BUTTON_IDLE;
