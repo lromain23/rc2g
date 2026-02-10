@@ -322,7 +322,6 @@ void set_trimpot(pot,value) { // {{{
   i2c_stop();  
   crlf();
   printf("Pot(%u)<=%u",pot,value);
-
 } // }}}
 void morse (int c) { // {{{
   int mc;
@@ -369,6 +368,8 @@ void update_ptt(int cor) { // {{{
   int ptt;
   char COR_s[5]={'0','0','0','0',0};
   char PTT_s[5]={'0','0','0','0',0};
+  char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
+  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -472,10 +473,10 @@ void process_dtmf(void) { // {{{
   // 06 : Increment Current Pot
   // 07 : Decrement Current Pot
   // 08 : Status
-  // 09 : AdminSettings 
-  //    :    Args : 0 - Normal mode
-  //    :           1 - Enter Admin mode
-  //    :           2 - Reboot
+  // 09 : AdminSettings (Must use 2-digit arguments) 
+  //    :    Args : 00 - Normal mode
+  //    :           01 - Enter Admin mode
+  //    :           02 - Reboot
   // 10 : Disable Link Radio
   // 11 : Enable Link Radio
   // 12 : Send to I2C
@@ -489,7 +490,7 @@ void process_dtmf(void) { // {{{
   // Set XO3(22) to 0       : 52 02 22 0 #
   // Set XO3(22) to 1       : 52 02 22 1 #
   // Change to pot 4        : 52 02 55 3 #
-  // Save Settings	    : 52 04 00 #
+  // Save Settings					: 52 04 00 #
   // Increment POT 01 by 3  : 52 06 01 3 #
   // Decrement POT 03 by 4  : 52 07 03 4 #
   // -- User Functions --
@@ -714,7 +715,6 @@ void pot_values_to_lcd (void) { // {{{
   lcd_send(0,LCD_str); // COR/PTT on line 0
   crlf();
   printf("%s",LCD_str);
-
 } // }}}
 void prompt(void) { // {{{
   if ( AdminMode ) {
@@ -940,7 +940,7 @@ void initialize (void) { // {{{
 // power-up
   clear_sBuffer();
   setup_comparator(NC_NC_NC_NC); 
-  setup_wdt(WDT_2S);
+  setup_wdt(WDT_ON|WDT_2S);
   PROCESS_COR_FLAG=0;
   COR_IN_FLAG=0;
   COR_IN=0;
@@ -966,11 +966,15 @@ void initialize (void) { // {{{
   output_bit(DTMF_WEB,1);
   output_bit(DTMF_REB,1);
   output_bit(DTMF_RS ,0);
+#ifdef LCD_TYPE_PI
+  init_lcd();
+#endif
   //clearscr();
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
   CLEAR_DTMF_FLAG=1;
   Enable_Mask = 0x0F;
+  QSO_Duration = 0;
   // Port B Pullups {{{
   // AuxIn pins : B6, B7, C0
   // Port_x_pullups requires a bit value corresponding to each
@@ -980,10 +984,10 @@ void initialize (void) { // {{{
   // DTMF interrupt : PIN_B4 (No pull-up required)
   // PIN_B5 : Adjust trmipot. Nu pull-up required
   // port_b_pullups(0b11000000 | (Polarity & 0x0F));
-  WPUB = 0b11000000 | ( Polarity & 0x0F);
+  port_b_pullups(PIN_B6 | PIN_B7);
+  // WPUB = 0b11000000 | ( Polarity & 0x0F);
   // Set WPUEN (bar) bit on OPTION_REG
   // Master Weak pull-up enable
-  WPUEN = 0;
   // }}}
   // C7 : UART RX
   // C6 : UART TX
@@ -996,6 +1000,7 @@ void initialize (void) { // {{{
   // TRIS_C = 0x5D;
   set_tris_c(0b10011101);
   // Pin A7 --> ENTER button
+  // Pin A3:0 --> RX_EN
   set_tris_a(0b10000000);
   init_trimpot();
   // Initialize RTC
@@ -1021,9 +1026,6 @@ void initialize (void) { // {{{
   set_admin_mode(0);
   rs232_mode=0;
   button_state=0;
-#ifdef LCD_TYPE_PI
-  init_lcd();
-#endif
   setup_adc(ADC_CLOCK_INTERNAL);
   setup_adc_ports(ADJ_POT|VSS_VDD);
   set_adc_channel(13);
@@ -1236,7 +1238,38 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       // Upper argument (uarg) inverts the output (bitwise invert selection)
       AuxOut[ID] = ((AuxInSW & larg) ^ uarg)!=0;
     break;
-    case AUX_OUT_FOLLOW_COR: 
+    case AUX_OUT_FOLLOW_PTT: {
+      int1 ptt_active=0; 
+      int1 invert_output = ((arg & AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT)!=0);
+      int1 disable_delay_en = ((arg & AUX_OUT_FOLLOW_PTT_DELAY) !=0);
+      int1 disable_delay = (aux_out_trigger[ID] && disable_delay_en && (AuxOutDelayCnt != 0));
+      int1 pin_value=0;
+      char p;
+      char ptt_mask=0x01;
+		  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
+      for(p=0;p<4;p++) {
+        if ( (ptt_mask & larg)!=0 ) {
+          int1 ptt_int=(input(PTT_PIN[p]));
+          if(ptt_int) {
+            ptt_active=1;                         
+          }
+        }
+        ptt_mask <<= 1;
+      }
+      if ( ptt_active ) {
+        if ( disable_delay_en ) {
+          AuxOutDelayCnt = 60;
+        }
+        pin_value=1;
+        aux_out_trigger[ID]=1;
+      } else {
+        pin_value = disable_delay;
+        aux_out_trigger[ID]=pin_value;
+      }
+      AuxOut[ID] = pin_value ^ invert_output;
+      break;
+    }
+    case AUX_OUT_FOLLOW_COR: {
       // Invert AuxIn value if argument 1 is set
       // Check what is the effective COR_IN. Many COR_INs can be applied but 
       // Only one is really effective and used to drive PTTs
@@ -1258,13 +1291,17 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
           }
         } else {
           pin_value = 1;
+          if ( disable_delay_en ) {
+            AuxOutDelayCnt = 60;
+          }
         }
       } else {
         pin_value = disable_delay;
       }
       AuxOut[ID] = pin_value ^ invert_output;
-    break;
-  }
+      break;
+      }
+    }
 } // }}}
 char str_to_decimal(char *str) { // {{{
   // Convert string to unsigned integer
@@ -1323,9 +1360,10 @@ void ExecAuxInOp(char op,char arg,char ID) { // {{{
 } // }}}
 void update_aux_in(void) { // {{{
   int x;
+  char AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
   for(x=0;x<3;x++) {
     // AuxIn is enabled via RS232 only for test/emulation purpose
-    AuxInSW[x] = ((input(AUX_IN_PIN[x])!=0 )|| (AuxIn[x]!=0));
+    AuxInSW[x] = ((input(AUX_IN_PIN[x]) )|| (AuxIn[x]!=0));
   }
 } // }}}
 void update_aux_out(void) { // {{{
@@ -1335,8 +1373,8 @@ void update_aux_out(void) { // {{{
   char AuxIn_s[4]={'0','0','0',0};
   char AuxOut_s[4]={'0','0','0',0};
   char ADM[]=" ADMIN";
-  int1 out_bit;
-
+  char AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
+  short out_bit;
   for(x=0;x<3;x++) {
     AuxOp = AuxOutOp[x];
     AuxArg = AuxOutArg[x];
@@ -1379,6 +1417,7 @@ void send_morse_id (void) { // {{{
   delay_ms(1000);
   PROCESS_COR_FLAG=1;
 } // }}}
+
 void main (void) { // {{{
   initialize();
 #ignore_warnings 203
@@ -1549,6 +1588,16 @@ void do_delay_counters(void) {
       QSO_Duration++; 
     }
     AUX_OUT_FLAG=1;
+    // Update COR PullUps {{{
+    int x;
+    for(x=0;x<4;x++) {
+      if(bit_test(Polarity,x)) {
+        bit_set(WPUB,x);
+      } else {
+        bit_clear(WPUB,x);
+      }
+    }
+    // }}}
     // Time Out PTT {{{
     if ( (TOT_Min > 0) && (QSO_Duration >= (TOT_Min*60))) {
       if ( TOT_FLAG_Mask == 0 ) {
@@ -1636,7 +1685,7 @@ void process_buttons(void) { // {{{
   CPotPtr=CurrentTrimPot & 0x03;
   // Process Enter / select buttons {{{
   _cor_in = (COR_IN | COR_EMUL ) & 0x0F;
-  if ( input(ENTER_BUTTON)==0 ) {
+  if ( !input(ENTER_BUTTON) ) {
     ENTER_PRESSED = (enter_b == DEBOUNCE_COUNT);
     if ( enter_b < DEBOUNCE_COUNT+ 1 ) {
       enter_b++; 
@@ -1645,7 +1694,7 @@ void process_buttons(void) { // {{{
     enter_b = 0;
     ENTER_PRESSED = 0;
   }
-  if ( input(SELECT_BUTTON)==0 ) {
+  if ( !input(SELECT_BUTTON) ) {
     SELECT_PRESSED = (select_b == DEBOUNCE_COUNT);
     if ( select_b < DEBOUNCE_COUNT + 1 ) {
       select_b++;
@@ -1689,7 +1738,7 @@ void process_buttons(void) { // {{{
        }
        if ( ENTER_PRESSED == 1 ) {
          // Hold SELECT and press ENTER to store settings in EEPROM
-         if ( input(SELECT_BUTTON)==0 ) {
+         if ( !input(SELECT_BUTTON) ) {
            store_variables();
          }
          button_state = BUTTON_IDLE;

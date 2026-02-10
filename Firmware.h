@@ -11,6 +11,7 @@
 #fuses NOFCMEN
 #fuses NOIESO
 #fuses NODEBUG
+#opt compress
 #case
 
 #include <stddef.h>
@@ -34,6 +35,7 @@
 #use delay(internal=8M,restart_wdt)
 #use I2C (master,force_hw,I2C1)
 #use RS232 (BAUD=9600,UART1,RESTART_WDT)
+#use fast_io (a)
 #use fast_io (b)
 #use fast_io (c)
 #use fast_io (d)
@@ -150,7 +152,24 @@ char admin_timer;
 #define AUX_OUT_IDLE 0
 #define AUX_OUT_FOLLOW_COR 0x01
 #define AUX_OUT_FOLLOW_AUX_IN 0x02
+#define AUX_OUT_FOLLOW_PTT    0x03
 #define QSO_DURATION_DELAY 5
+
+// AuxOut FollowPtt Arguments
+// 7  6  5  4  3  2  1  0
+// ======================
+//             <PTT[3:0]>
+//          D 
+//       I
+// PTT : Which PTT signals to follow
+// D   : Add 60s delay on PTT fall 
+// I	 : Invert output (Use this to drive a fan when PTT is active)
+#define AUX_OUT_FOLLOW_PTT1              0x01
+#define AUX_OUT_FOLLOW_PTT2              0x02
+#define AUX_OUT_FOLLOW_PTT3              0x04
+#define AUX_OUT_FOLLOW_PTT4              0x08
+#define AUX_OUT_FOLLOW_PTT_DELAY         0x10
+#define AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT 0x20
 // This command operates the same way as AUX_OUT_FOLLOW_COR but
 // it extends the aux output by 1 minute.
 // Follow COR args:
@@ -327,6 +346,7 @@ int1 ENTER_PRESSED;
 int1 SELECT_PRESSED;
 int  adj_value_a,adj_value_b;
 char button_state;
+int1 aux_out_trigger[3]={0,0,0};
 int1       SECOND_FLAG;
 int1       MINUTE_FLAG;
 int1       THIRTY_MIN_FLAG;
@@ -387,13 +407,13 @@ int1       rs232_mode;
 #define ST_COL   0x08
 #define LCD_ENABLE
 
+// PIN_B5 used for Potentiometer
 #define AUX_IN0  PIN_B6
 #define AUX_IN1  PIN_B7
 #define AUX_IN2  PIN_C0
 #define AUX_OUT0 PIN_C1
 #define AUX_OUT1 PIN_C5
 #define AUX_OUT2 PIN_E2
-
 
 #define COR0 PIN_B0
 #define COR1 PIN_B1
@@ -419,17 +439,13 @@ int1       rs232_mode;
 #bit  WPUEN = 0x095.7
 #byte WPUB  = 0x20D
 #byte IOCBF = 0x396 
+#byte PCON  = 0x096 
 
 //rom char COR_IN_NAME[]="COR_IN";
 //rom char POL_NAME[]="POLARITY";
 //rom char COR0_GAIN_NAME[]="C0GAIN";
-
 //rom char * rom strPtr=COR_IN_NAME;
 
-const char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
-const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
-const int AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
-const int AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
 
 char const reg_name[][REG_NAME_SIZE]={
 	{"EN"},	  // 0
@@ -491,7 +507,7 @@ char const reg_name[][REG_NAME_SIZE]={
     {"CPOT"}  // 56
 };
 
-#include "SITE_XX.h"
+#include "Site_XX.h"
 // Define default variables {{{
 #ifdef LCD_TYPE_PI
   #define LCD_I2C_ADD 0x27
@@ -513,6 +529,18 @@ char const reg_name[][REG_NAME_SIZE]={
 #endif
 #ifndef RX4_PTT
   #define RX4_PTT 0x07
+#endif
+#ifndef R1Priority
+  #define R1Priority 4
+#endif
+#ifndef R2Priority
+  #define R2Priority 6
+#endif
+#ifndef R3Priority
+  #define R3Priority 6
+#endif
+#ifndef R4Priority
+  #define R4Priority 2
 #endif
 #ifndef DEFAULT_GAIN
   #define DEFAULT_GAIN 32
@@ -550,10 +578,10 @@ struct sRegMap_t const RegMap[]={
 	{&AuxOut[0]     ,PO_AUX_OUT0     , EEPROM,PUBLIC},
 	{&AuxOut[1]     ,PO_AUX_OUT1     , EEPROM,PUBLIC},
 	{&AuxOut[2]     ,PO_AUX_OUT2     , EEPROM,PUBLIC},
-	{&RXPriority[0] ,4               , EEPROM,PROTECTED},
-	{&RXPriority[1] ,6               , EEPROM,PROTECTED},
-	{&RXPriority[2] ,6               , EEPROM,PROTECTED},
-	{&RXPriority[3] ,2               , EEPROM,PROTECTED},
+	{&RXPriority[0] ,R1Priority     , EEPROM,PROTECTED},
+	{&RXPriority[1] ,R2Priority     , EEPROM,PROTECTED},
+	{&RXPriority[2] ,R3Priority     , EEPROM,PROTECTED},
+	{&RXPriority[3] ,R4Priority     , EEPROM,PROTECTED},
 	{&RX_PTT[0]     ,RX1_PTT         , EEPROM,PROTECTED},
 	{&RX_PTT[1]     ,RX2_PTT         , EEPROM,PROTECTED},
 	{&RX_PTT[2]     ,RX3_PTT         , EEPROM,PROTECTED},
