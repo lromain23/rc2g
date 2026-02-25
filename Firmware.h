@@ -446,10 +446,10 @@ int1       rs232_mode;
 //rom char COR0_GAIN_NAME[]="C0GAIN";
 //rom char * rom strPtr=COR_IN_NAME;
 
-const char RX_PIN[]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
-const char PTT_PIN[]={PTT0,PTT1,PTT2,PTT3};
-char AUX_OUT_PIN[]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
-char AUX_IN_PIN[] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
+//const char RX_PIN[]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
+//const char PTT_PIN[]={PTT0,PTT1,PTT2,PTT3};
+//const char AUX_OUT_PIN[]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
+//const char AUX_IN_PIN[] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
 
 char const reg_name[][REG_NAME_SIZE]={
 	{"EN"},	  // 0
