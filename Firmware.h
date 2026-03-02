@@ -3,16 +3,21 @@
 #device ADC=8;
 #fuses INTRC_IO
 #fuses NOPROTECT
-#fuses BROWNOUT
+#fuses NOLVP
 #fuses NOMCLR
 #fuses NOCPD
+#fuses BROWNOUT
 #fuses WDT // WDT controlled by sw
 #fuses NOPUT
 #fuses NOFCMEN
 #fuses NOIESO
 #fuses NODEBUG
-#opt compress
+// Enable manually only if your CCS version supports it reliably:
+#opt 9
 #case
+
+// #define FW_VERBOSE_COMMAND_LOG    // logging uses extra ROM
+#define FW_ENABLE_STATUS_CMD     // optional STATUS command
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -22,7 +27,10 @@
 #define MIN_COUNTER 29
 #define SEC_COUNTER 59
 #define TAIL_CHAR 0
-#define BUTTON_STATES
+#define FW_ENABLE_BUTTON_STATES
+#ifdef FW_ENABLE_BUTTON_STATES
+	#define BUTTON_STATES
+#endif
 #define POT_MAX 63
 
 #define RS 0x01
@@ -44,6 +52,7 @@
 //function headers
 char str_to_decimal(char *str);
 void process_dtmf_interrupt(void);
+void update_ptt(int);
 void crlf (void);
 void init_lcd(void);
 int1 read_cor_in_ports(void);
@@ -72,7 +81,19 @@ void update_aux_out(void);
 void print_dfmf_info(void);
 void do_delay_counters(void);
 void process_buttons(void);
+void execute_command(void);
 int1 my_stricmp(char *, char *);
+void lcd_send(char, char *);
+void lcd_write(char,char);
+int ValidKeyRange(unsigned int, unsigned int);
+int ValidKey(int);
+unsigned get_site_id();
+unsigned get_command();
+
+// helpers broken out from do_delay_counters to reduce code size
+void do_delay_counters_sec(void);
+void do_delay_counters_min(void);
+void do_delay_counters_30min(void);
 
 // Variables accessed using linear addressing {{{
 unsigned int RX_GAIN[4][4];
@@ -344,7 +365,7 @@ int1 PROCESS_COR_FLAG;
 int1 COR_IN_FLAG;
 int1 ENTER_PRESSED;
 int1 SELECT_PRESSED;
-int  adj_value_a,adj_value_b;
+unsigned int8 adj_value_a,adj_value_b;
 char button_state;
 int1 aux_out_trigger[3]={0,0,0};
 int1       SECOND_FLAG;
@@ -450,6 +471,11 @@ int1       rs232_mode;
 //const char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
 //char AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
 //char AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
+
+unsigned int const RX_PIN_MAP[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
+unsigned int const PTT_PIN_MAP[4]={PTT0,PTT1,PTT2,PTT3};
+unsigned int const AUX_OUT_PIN_MAP[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
+unsigned int const AUX_IN_PIN_MAP[3]={AUX_IN0,AUX_IN1,AUX_IN2};
 
 char const reg_name[][REG_NAME_SIZE]={
 	{"EN"},	  // 0
@@ -614,7 +640,7 @@ struct sRegMap_t const RegMap[]={
   {&TOT_Min       ,TOT_MIN         , EEPROM,PROTECTED},
   {&Link_TOT      ,LINK_TOT        , EEPROM,PROTECTED},
 	{&COR_EMUL      ,0x00            , RAM   ,PUBLIC},
-	{&CurrentTrimPot,0x00            , RAM   ,PROTECTED},
+	{&CurrentTrimPot,0x00            , RAM   ,PROTECTED}
 };
 
 
