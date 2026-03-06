@@ -92,8 +92,10 @@ void lcd_write(char rs, char data) { // {{{
 } // }}}
 
 void lcd_send(char line,char * s) { // {{{
-  int lcd_cmd;
   int1 ack;
+#ifndef LCD_TYPE_PI
+  int lcd_cmd;
+#endif
 
 #ifdef LCD_ENABLE
   i2c_start();
@@ -153,9 +155,11 @@ void status_led(void) { // {{{
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
-  int lcd_cmd;
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
+#ifndef LCD_TYPE_PI
+  int lcd_cmd;
+#endif
   crlf();
   #ifdef FW_VERBOSE_COMMAND_LOG
   if ( command ) {
@@ -244,7 +248,9 @@ void execute_command(void) { // {{{
       }
 #else
       lcd_cmd=4+(value&0x03);
-      sprintf(LCD_str,"I2C => %d",lcd_cmd);
+  strcpy(LCD_str,"I2C => ");
+  LCD_str[7] = '0' + (lcd_cmd & 0x0F);
+  LCD_str[8] = '\0';
       crlf();
       printf("%s",LCD_str);
       lcd_send(lcd_cmd,LCD_str);
@@ -267,22 +273,39 @@ void process_sBuffer(void) { // {{{
   unsigned long x;
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
+  int1 arg_found;
+  int1 needs_reg_lookup;
 
   lcd_send(2,sBuffer);
   argument = -1;
+  arg_found = 0;
+  needs_reg_lookup = 0;
   // tokenize_sBuffer may set argument for some commands
   tokenize_sBuffer();
 
+  if ( command == 0 ) {
+    return;
+  }
+
+  needs_reg_lookup = (command == SET_REG || command == GET_REG);
+#if __DEVICE__  == 1939
+  needs_reg_lookup = needs_reg_lookup || (command == SET_BIT) || (command == CLEAR_BIT);
+#endif
+
   // Find matching register or argument
-  for(x=0;x<RegMapNum;x++) {
-    cPtr = &reg_name + (x * REG_NAME_SIZE);
-    romstrcpy(rname,cPtr);
-    if(my_stricmp(argument_name,rname)==0) {
-      argument=x;
+  if ( needs_reg_lookup ) {
+    for(x=0;x<RegMapNum;x++) {
+      cPtr = &reg_name + (x * REG_NAME_SIZE);
+      romstrcpy(rname,cPtr);
+      if(my_stricmp(argument_name,rname)==0) {
+        argument=x;
+        arg_found = 1;
+        break;
+      }
     }
   }
   // Match "EEPROM" or "RAM" for restore/save functions
-  if ( argument == -1 ) {
+  if ( !arg_found ) {
     // save/restore <eeprom>
     // Convert "argument_name" to value when sending dtmf via RS232 using:
     // d <digit> 
@@ -304,6 +327,43 @@ void process_sBuffer(void) { // {{{
   rs232_mode = 1;
   execute_command();
   rs232_mode = 0;
+} // }}}
+// Compares token `token` to `pattern` case-insensitively and requires an exact full-token match.
+int1 token_match(char *token, char *pattern) { // {{{
+  char token_ch;
+  char pattern_ch;
+
+  while ( *pattern != 0 ) {
+    token_ch = (*token)&0xDF;
+    pattern_ch = (*pattern)&0xDF;
+    if ( token_ch != pattern_ch ) {
+      return 0;
+    }
+    token++;
+    pattern++;
+  }
+  return *token == 0;
+} // }}}
+// Skips token delimiters in `src`, copies the next token into `dst`, and returns the updated source pointer.
+char *extract_token(char *src, char *dst, int dst_size) { // {{{
+  int x;
+
+  x=0;
+  if ( dst_size <= 0 ) {
+    return(src);
+  }
+  while(*src==' ' || *src==',' || *src==';' || *src=='\r') {
+    src++;
+  }
+  while(*src!=0 && *src!=' ' && *src!=',' && *src!=';' && *src!='\r') {
+    if ( x < (dst_size-1) ) {
+      dst[x]=*src;
+      x++;
+    }
+    src++;
+  }
+  dst[x]='\0';
+  return(src);
 } // }}}
 void clearscr(void) { // {{{
 // Erase the screen 
@@ -724,10 +784,20 @@ void pot_values_to_lcd (void) { // {{{
   #endif
   // 0x7e character is right arrow
   // 0xc7 on LCD displays with standard characters
-  sprintf(LCD_str,"POT:");
+  strcpy(LCD_str,"POT:");
   char tmp_str[5];
   for(x=0;x<4;x++) {
-	  sprintf(tmp_str,"%c%d ",c[x],pval[x]);
+    tmp_str[0]=c[x];
+    if ( pval[x] >= 10 ) {
+      tmp_str[1]='0'+(pval[x]/10);
+      tmp_str[2]='0'+(pval[x]%10);
+      tmp_str[3]=' ';
+      tmp_str[4]='\0';
+    } else {
+      tmp_str[1]='0'+pval[x];
+      tmp_str[2]=' ';
+      tmp_str[3]='\0';
+    }
     strcat(LCD_str,tmp_str);
   }
   lcd_send(0,LCD_str); // COR/PTT on line 0
@@ -842,15 +912,21 @@ void update_checksum (int *cksum,int value) { // {{{
 void print_dtmf_info(void) { // {{{
   unsigned int x;
   char dtmf;
-  char tmp[5];
+  char *p;
   strcpy(LCD_str,"DTMF:");
+  p = LCD_str + 5;
   crlf();
   printf("DTMF=");
   for(x=0;x<DTMF_ARRAY_SIZE;x++) {
     if(DTMF_ARRAY[x].Strobe) {
       dtmf=(int)DTMF_ARRAY[x].Key;
-      sprintf(tmp,"%d",dtmf);
-      strcat(LCD_str,tmp);
+      if ( dtmf >= 10 ) {
+        *p++='1';
+        *p++='0'+(dtmf-10);
+      } else {
+        *p++='0'+dtmf;
+      }
+      *p='\0';
       printf("%u",dtmf);
     }
   restart_wdt();
@@ -1047,79 +1123,68 @@ void tokenize_sBuffer() { // {{{
   char verb[8];
   int1 do_get_var=0;
   char *sptr;
-  char match_tok[8],match_val[4],smatch_reg[8];
+  char match_val[4];
+  static char tok_set[]="SET";
+#if __DEVICE__  == 1939
+  static char tok_setb[]="SETB";
+  static char tok_clrb[]="CLRB";
+#endif
+  static char tok_save[]="SAVE";
+  static char tok_restore[]="RESTORE";
+  static char tok_status[]="STATUS";
+  static char tok_reboot[]="REBOOT";
+  static char tok_d[]="D";
+  static char tok_i2c[]="I2C";
+  static char tok_morse[]="MORSE";
+  static char tok_n[]="N";
+  static char tok_admin[]="ADMIN";
 
   verb[0]='\0';
+  argument_name[0]='\0';
+  match_val[0]='\0';
+  command=0;
 
-  // Get verb {{{
-  strcpy(match_tok," ,;\r");
-  sptr=strtok(sBuffer,match_tok);
-  if (sptr!=0) {
-    strcpy(verb,sptr);
-  }  
-  // }}}  
-  // Get argument {{{
-  sptr=strtok(0,match_tok);
-  if (sptr!=0) {
-    strcpy(argument_name,sptr);
-  }  
-  // }}}
-  // Get value {{{
-  sptr=strtok(0,match_tok);
-  if (sptr!=0) {
-    strcpy(match_val,sptr);
+  // Get verb, argument and value {{{
+  sptr=sBuffer;
+  sptr=extract_token(sptr,verb,sizeof(verb));
+  sptr=extract_token(sptr,argument_name,REG_NAME_SIZE);
+  sptr=extract_token(sptr,match_val,sizeof(match_val));
+  if (match_val[0]!=0) {
     value = str_to_decimal(match_val);
   } else {
     value = 0;
     do_get_var = 1;
-  }  
+  }
   // }}}
-  // Check for "SET" command {{{
-  strcpy(smatch_reg,"set");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  if ( token_match(verb,tok_set) ) {
     if ( do_get_var ) {
       command=GET_REG;
     } else {
       command=SET_REG;
     }
-  } // }}}
+  }
 #if __DEVICE__  == 1939
-  // Check for "setb" command {{{
-  strcpy(smatch_reg,"setb");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  else if ( token_match(verb,tok_setb) ) {
       command=SET_BIT;
-  } // }}}
-  // Check for "setb" command {{{
-  strcpy(smatch_reg,"clrb");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_clrb) ) {
       command=CLEAR_BIT;
-  } // }}}
+  }
 #endif
-  // Check for "SAVE" command {{{
-  strcpy(smatch_reg,"SAVE");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  else if ( token_match(verb,tok_save) ) {
       command=SAVE_SETTINGS;
-  } // }}}
-  // Check for "RESTORE" command {{{
-  strcpy(smatch_reg,"RESTORE");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_restore) ) {
       command=RESTORE_SETTINGS;
-  } // }}}
-  // Check for "STATUS" command {{{
-  strcpy(smatch_reg,"status");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_status) ) {
     command=STATUS;
-  } // }}}
-  // Check for "reboot" command {{{
-  strcpy(smatch_reg,"reboot");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_reboot) ) {
     command=ADMIN;
     argument=REBOOT;
-  } // }}}
-  // Check for "dtmf" command {{{
-  strcpy(smatch_reg,"d");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
-    //command=DTMF_SEND;
+  }
+  else if ( token_match(verb,tok_d) ) {
     command=0;
     value = str_to_decimal(argument_name);
     if ( value == d0 ) {
@@ -1128,18 +1193,11 @@ void tokenize_sBuffer() { // {{{
       value = d0;
     }
     dtmf_send_digit(value&0x0F);
-  } // }}}
-  // Check for "i2c" command {{{
-  strcpy(smatch_reg,"i2c");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_i2c) ) {
     command=I2C_SEND;
-  } // }}}
-  // Check for "morse" command {{{
-  // morse [0..35] --> send 0-9 or a-z in morse
-  // morse[36]     --> Silence
-  // morse <value> 37 --> send site ID
-  strcpy(smatch_reg,"morse");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_morse) ) {
     value = str_to_decimal(argument_name);
     if ( value < MORSE_CHAR_ARRAY_LENGTH ) {
       argument = 0;
@@ -1148,31 +1206,23 @@ void tokenize_sBuffer() { // {{{
       command  = ADMIN;
       argument = SEND_MORSE_ID;
     }
-  } // }}}
-  // Check for "+ (INCR)" command {{{
-  strcpy(smatch_reg,"+");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( verb[0]=='+' && verb[1]==0 ) {
     command=INCREMENT_REG;
-  } // }}}
-  // Check for "- (DECR)" command {{{
-  strcpy(smatch_reg,"-");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( verb[0]=='-' && verb[1]==0 ) {
     command=DECREMENT_REG;
-  } // }}}
-  // Check for "n (Next CPOT)" command {{{
-  strcpy(smatch_reg,"n");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_n) ) {
     command=SET_REG;
     value = (CurrentTrimPot + 1)&0x03;
     strcpy(argument_name,"CPOT");
-  } // }}}
-  // AdminMode toggle Check for "admin" command {{{
-  strcpy(smatch_reg,"admin");
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_admin) ) {
     AdminMode = ~AdminMode;
     set_admin_mode(AdminMode);
     PROMPT_FLAG = 1;
-  } // }}}
+  }
 } // }}}
 #if __DEVICE__  == 1939
 void set_bit (void) { // {{{
