@@ -1,4 +1,4 @@
-CCS PCM C Compiler, Version 5.124, 5277               08-Mar-26 11:20
+CCS PCM C Compiler, Version 5.124, 5277               08-Mar-26 13:26
 
                Filename:   /home/luc/Projects/RC2G/VerB/54_BoisFranc/Firmware.lst
 
@@ -301,11 +301,11 @@ CCS PCM C Compiler, Version 5.124, 5277               08-Mar-26 11:20
 0113:  RETLW  03
 0114:  RETLW  3B
 0115:  RETLW  20
-0116:  RETLW  32
+0116:  RETLW  38
 0117:  RETLW  03
 0118:  RETLW  3C
 0119:  RETLW  20
-011A:  RETLW  31
+011A:  RETLW  37
 011B:  RETLW  03
 011C:  RETLW  3D
 011D:  RETLW  20
@@ -4642,11 +4642,11 @@ CCS PCM C Compiler, Version 5.124, 5277               08-Mar-26 11:20
 .................... #define AUXOUTARG0 0
 .................... // Fan Lien
 .................... #define AUXOUTOP1 AUX_OUT_FOLLOW_PTT
-.................... #define AUXOUTARG1 AUX_OUT_FOLLOW_PTT2 | AUX_OUT_FOLLOW_PTT_DELAY | AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT
+.................... #define AUXOUTARG1 AUX_OUT_FOLLOW_PTT4 | AUX_OUT_FOLLOW_PTT_DELAY | AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT
 .................... 
 .................... // Fan Repeteur
 .................... #define AUXOUTOP2 AUX_OUT_FOLLOW_PTT
-.................... #define AUXOUTARG2 AUX_OUT_FOLLOW_PTT1 | AUX_OUT_FOLLOW_PTT_DELAY | AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT
+.................... #define AUXOUTARG2 AUX_OUT_FOLLOW_PTT3 | AUX_OUT_FOLLOW_PTT2 | AUX_OUT_FOLLOW_PTT1 | AUX_OUT_FOLLOW_PTT_DELAY | AUX_OUT_FOLLOW_PTT_INVERT_OUTPUT
 .................... 
 .................... //#define AUXINOP0 AUXI_ENABLE
 .................... //#define AUXINARG0 AUXI_ENABLE2|AUXI_ENABLE3|AUXI_ENABLE4
