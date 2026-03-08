@@ -59,7 +59,6 @@ void int_rtcc(void) { // {{{
     aux_timer--;
   }
 } // }}}
-
 int1 read_cor_in_ports (void) { // {{{
   // Updates COR_IN_HW and COR_IN variables
   // Returns a 1 if a new COR is detected.
@@ -93,8 +92,10 @@ void lcd_write(char rs, char data) { // {{{
 } // }}}
 
 void lcd_send(char line,char * s) { // {{{
-  int lcd_cmd;
   int1 ack;
+#ifndef LCD_TYPE_PI
+  int lcd_cmd;
+#endif
 
 #ifdef LCD_ENABLE
   i2c_start();
@@ -116,7 +117,7 @@ void lcd_send(char line,char * s) { // {{{
   if ( ack!=0 ) {
     if ( warn_no_lcd ) {
       crlf();
-      printf("I2C : No ACK from LCD : %u",ack);
+      printf("I2C : No ACK from LCD");
       warn_no_lcd = 0;
     }
   } else {
@@ -154,17 +155,23 @@ void status_led(void) { // {{{
 void execute_command(void) { // {{{
   unsigned int* regPtr;
   int1 init_src;
-  int lcd_cmd;
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
+#ifndef LCD_TYPE_PI
+  int lcd_cmd;
+#endif
   crlf();
+  #ifdef FW_VERBOSE_COMMAND_LOG
   if ( command ) {
+	  #if __DEVICE__  == 1939
     crlf(); printf("Processing Command:");
-    crlf(); printf("  SiteID   : %u",SiteID);
-    crlf(); printf("  Command  : %02u",command);
-    crlf(); printf("  Argument : %u",argument);
-    crlf(); printf("  Value    : %u",value);
+    crlf(); printf(" SiteID   : %u",SiteID);
+    #endif
+    crlf(); printf(" Cmd:%02u",command);
+    crlf(); printf(" Arg:%u",argument);
+    crlf(); printf(" Val:%u",value);
   }
+  #endif
   switch(command) {
     case SET_REG:
       set_var();
@@ -205,7 +212,10 @@ void execute_command(void) { // {{{
       PROMPT_FLAG=1;
       break;
     case STATUS:
+    #ifdef FW_ENABLE_STATUS_CMD
       status();
+    #endif
+      PROMPT_FLAG=1;
       break;
     case ADMIN:
       switch(argument) {
@@ -238,7 +248,9 @@ void execute_command(void) { // {{{
       }
 #else
       lcd_cmd=4+(value&0x03);
-      sprintf(LCD_str,"I2C => %d",lcd_cmd);
+  strcpy(LCD_str,"I2C => ");
+  LCD_str[7] = '0' + (lcd_cmd & 0x0F);
+  LCD_str[8] = '\0';
       crlf();
       printf("%s",LCD_str);
       lcd_send(lcd_cmd,LCD_str);
@@ -261,22 +273,39 @@ void process_sBuffer(void) { // {{{
   unsigned long x;
   rom char * cPtr;
   char rname[REG_NAME_SIZE];
+  int1 arg_found;
+  int1 needs_reg_lookup;
 
   lcd_send(2,sBuffer);
   argument = -1;
+  arg_found = 0;
+  needs_reg_lookup = 0;
   // tokenize_sBuffer may set argument for some commands
   tokenize_sBuffer();
 
+  if ( command == 0 ) {
+    return;
+  }
+
+  needs_reg_lookup = (command == SET_REG || command == GET_REG);
+#if __DEVICE__  == 1939
+  needs_reg_lookup = needs_reg_lookup || (command == SET_BIT) || (command == CLEAR_BIT);
+#endif
+
   // Find matching register or argument
-  for(x=0;x<RegMapNum;x++) {
-    cPtr = &reg_name + (x * REG_NAME_SIZE);
-    romstrcpy(rname,cPtr);
-    if(my_stricmp(argument_name,rname)==0) {
-      argument=x;
+  if ( needs_reg_lookup ) {
+    for(x=0;x<RegMapNum;x++) {
+      cPtr = &reg_name + (x * REG_NAME_SIZE);
+      romstrcpy(rname,cPtr);
+      if(my_stricmp(argument_name,rname)==0) {
+        argument=x;
+        arg_found = 1;
+        break;
+      }
     }
   }
   // Match "EEPROM" or "RAM" for restore/save functions
-  if ( argument == -1 ) {
+  if ( !arg_found ) {
     // save/restore <eeprom>
     // Convert "argument_name" to value when sending dtmf via RS232 using:
     // d <digit> 
@@ -299,6 +328,43 @@ void process_sBuffer(void) { // {{{
   execute_command();
   rs232_mode = 0;
 } // }}}
+// Compares token `token` to `pattern` case-insensitively and requires an exact full-token match.
+int1 token_match(char *token, char *pattern) { // {{{
+  char token_ch;
+  char pattern_ch;
+
+  while ( *pattern != 0 ) {
+    token_ch = (*token)&0xDF;
+    pattern_ch = (*pattern)&0xDF;
+    if ( token_ch != pattern_ch ) {
+      return 0;
+    }
+    token++;
+    pattern++;
+  }
+  return *token == 0;
+} // }}}
+// Skips token delimiters in `src`, copies the next token into `dst`, and returns the updated source pointer.
+char *extract_token(char *src, char *dst, int dst_size) { // {{{
+  int x;
+
+  x=0;
+  if ( dst_size <= 0 ) {
+    return(src);
+  }
+  while(*src==' ' || *src==',' || *src==';' || *src=='\r') {
+    src++;
+  }
+  while(*src!=0 && *src!=' ' && *src!=',' && *src!=';' && *src!='\r') {
+    if ( x < (dst_size-1) ) {
+      dst[x]=*src;
+      x++;
+    }
+    src++;
+  }
+  dst[x]='\0';
+  return(src);
+} // }}}
 void clearscr(void) { // {{{
 // Erase the screen 
   putc(ESC);
@@ -316,12 +382,14 @@ void set_trimpot(pot,value) { // {{{
   ack=i2c_write(TRIMPOT_WRITE_CMD);
   if ( ack != 0) {
     crlf();
-    printf("I2C : !ACK");
+    printf("POT:~ACK");
   }
   i2c_write(tx_value);
   i2c_stop();  
+  #if __DEVICE__  == 1939
   crlf();
   printf("Pot(%u)<=%u",pot,value);
+  #endif
 } // }}}
 void morse (int c) { // {{{
   int mc;
@@ -362,14 +430,12 @@ void morse (int c) { // {{{
   }
 } // }}}
 void update_ptt(int cor) { // {{{
-  char x,pot;
-  int pot_val;
-  int mask;
-  int ptt;
+  unsigned int x,pot;
+  unsigned int pot_val;
+  unsigned int mask;
+  unsigned int ptt;
   char COR_s[5]={'0','0','0','0',0};
   char PTT_s[5]={'0','0','0','0',0};
-  char RX_PIN[4]={RX0_EN,RX1_EN,RX2_EN,RX3_EN};
-  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
   int1 rx_bit,ptt_bit;
 
   CurrentCorIndex=cor;
@@ -400,8 +466,8 @@ void update_ptt(int cor) { // {{{
       }
       ptt_bit=(ptt&mask)!=0;
     }
-    output_bit(RX_PIN[x],rx_bit);
-    output_bit(PTT_PIN[x],ptt_bit);
+    output_bit(RX_PIN_MAP[x],rx_bit);
+    output_bit(PTT_PIN_MAP[x],ptt_bit);
     if(ptt_bit) {
       PTT_s[x]='1';
     }
@@ -483,7 +549,7 @@ void process_dtmf(void) { // {{{
   // 14 : SetBit   (*52 14 <reg> <bit>)
   // 15 : ClearBit (*52 15 <reg> <bit>)
   // 
-  // Ex: (# = 12)
+  // Ex: ('*' = 11, '#' = 12)
   // Enter Admin mode       : 52 09 01 #
   // Reboot                 : 52 09 02 #
   // Send Morse ID          : 52 09 03 #
@@ -515,6 +581,7 @@ void process_dtmf(void) { // {{{
       // User function {{{
       // Only 4 digits were entered. 
       // Use 'command' value as user function.
+#ifdef ENABLE_USER_FUNCTIONS
       switch(command) {
         // Commands 10 (disable link) and 11 (enable link)
         case(10):
@@ -530,6 +597,7 @@ void process_dtmf(void) { // {{{
   default:
     command=0;
       }
+#endif
       // User function }}}
     }
     // Commands that don't need arguments but need a value:
@@ -620,6 +688,7 @@ void process_cor (void) { // {{{
   }
   if ( do_update_ptt ) {
     update_ptt(cor_index);
+	  do_update_ptt=0;
     PROMPT_FLAG=1;
   }
   // Clear the DTMF array when all CORs fall
@@ -637,13 +706,12 @@ void process_cor (void) { // {{{
 } // }}}
 void clear_dtmf_array(void) { // {{{
   int x;
-
   for(x=0;x<sizeof(DTMF_ARRAY);x++) {
     DTMF_ARRAY[x]=(sDTMF)0;
   }
   DTMF_ptr=&DTMF_ARRAY[0];
 } // }}}
-
+#ifdef FW_ENABLE_STATUS_CMD
 void status (void) { // {{{
   unsigned long x;
   char y;
@@ -675,12 +743,15 @@ void status (void) { // {{{
   }
   putc('\n');
   crlf();
+  #if __DEVICE__  == 1939
   printf("COR:%u AuxIn:%u",COR_IN_EFFECTIVE,aux_in);
   crlf();
   printf("DTMF:%u",dtmf_in);
+  #endif
   pot_values_to_lcd();
   PROMPT_FLAG=1;
 } // }}}
+#endif
 void pot_values_to_lcd (void) { // {{{
   char x;
   int8 pot_val;
@@ -705,16 +776,32 @@ void pot_values_to_lcd (void) { // {{{
   }
   i2c_stop();
   delay_ms(50);
+  #if __DEVICE__  == 1939
   if ( ack_in!=0 ) {
     crlf();
-    printf("I2C Error : No ACK from TRIMPOTS : %u",ack);
+    printf("POT:!ACK");
   }
+  #endif
   // 0x7e character is right arrow
   // 0xc7 on LCD displays with standard characters
-  sprintf(LCD_str,"POT:%c%d %c%d %c%d %c%d",c[0],pval[0],c[1],pval[1],c[2],pval[2],c[3],pval[3]);
+  strcpy(LCD_str,"POT:");
+  char tmp_str[5];
+  for(x=0;x<4;x++) {
+    tmp_str[0]=c[x];
+    if ( pval[x] >= 10 ) {
+      tmp_str[1]='0'+(pval[x]/10);
+      tmp_str[2]='0'+(pval[x]%10);
+      tmp_str[3]=' ';
+      tmp_str[4]='\0';
+    } else {
+      tmp_str[1]='0'+pval[x];
+      tmp_str[2]=' ';
+      tmp_str[3]='\0';
+    }
+    strcat(LCD_str,tmp_str);
+  }
   lcd_send(0,LCD_str); // COR/PTT on line 0
-  crlf();
-  printf("%s",LCD_str);
+  printf("\r%s",LCD_str);
 } // }}}
 void prompt(void) { // {{{
   if ( AdminMode ) {
@@ -789,39 +876,26 @@ void init_dtmf(void) { // {{{
     dtmf_write(BURST_OFF,CONTROL_REG);
     dtmf_read(CONTROL_REG);
 } // }}}
-void dtmf_send_digit(int digit) { // {{{
-  dtmf_write(digit,DATA_REG);
+void send_dtmf_tone(int tone,int mode,unsigned int duration) { // {{{
+  dtmf_write(tone,DATA_REG);
   dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
-  dtmf_write(BURST_OFF|DUAL_TONE,CONTROL_REG); // Enable DTMF
+  dtmf_write(BURST_OFF|mode,CONTROL_REG); // Enable DTMF
   dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
-  aux_timer=AUX_TIMER_500ms;
+  aux_timer=duration;
   while(aux_timer) {
     delay_cycles(1);
   }
   dtmf_write(IRQ,CONTROL_REG); // Disable tones
 } // }}}
+void dtmf_send_digit(int digit) { // {{{
+  send_dtmf_tone(digit,DUAL_TONE,AUX_TIMER_500ms);
+} // }}}
 void dit (void) { // {{{
-  dtmf_write(1,DATA_REG);
-  dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
-  dtmf_write(BURST_OFF|SINGLE_TONE,CONTROL_REG); // Enable DTMF
-  dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
-  aux_timer=MorseLen[(MorseDitLength&0x03)];
-  while(aux_timer) {
-    delay_cycles(1);
-  }
-  dtmf_write(IRQ,CONTROL_REG); // Disable tones
+  send_dtmf_tone(1,SINGLE_TONE,MorseLen[(MorseDitLength&0x03)]);
   restart_wdt();
 } // }}}
 void dah (void) { // {{{
-  dtmf_write(1,DATA_REG);
-  dtmf_write(IRQ|RSELB,CONTROL_REG); // Switch to DTMF mode
-  dtmf_write(BURST_OFF|SINGLE_TONE,CONTROL_REG); // Enable DTMF
-  dtmf_write(TOUT|IRQ,CONTROL_REG); // Enable Tones
-  aux_timer=3*MorseLen[(MorseDitLength&0x03)];
-  while(aux_timer) {
-    delay_cycles(1);
-  }
-  dtmf_write(IRQ,CONTROL_REG); // Disable tones
+  send_dtmf_tone(1,SINGLE_TONE,3*MorseLen[(MorseDitLength&0x03)]);
   restart_wdt();
 } // }}}
 void update_checksum (int *cksum,int value) { // {{{
@@ -838,15 +912,21 @@ void update_checksum (int *cksum,int value) { // {{{
 void print_dtmf_info(void) { // {{{
   unsigned int x;
   char dtmf;
-  char tmp[5];
+  char *p;
   strcpy(LCD_str,"DTMF:");
+  p = LCD_str + 5;
   crlf();
   printf("DTMF=");
   for(x=0;x<DTMF_ARRAY_SIZE;x++) {
     if(DTMF_ARRAY[x].Strobe) {
       dtmf=(int)DTMF_ARRAY[x].Key;
-      sprintf(tmp,"%d",dtmf);
-      strcat(LCD_str,tmp);
+      if ( dtmf >= 10 ) {
+        *p++='1';
+        *p++='0'+(dtmf-10);
+      } else {
+        *p++='0'+dtmf;
+      }
+      *p='\0';
       printf("%u",dtmf);
     }
   restart_wdt();
@@ -868,11 +948,11 @@ int _init_variables (int1 source) { // {{{
   eeprom_index=0;
   retVal = 1;
   crlf();
-  printf("Init RAM <= ");
+  printf("RAM<=");
   if ( source == USE_EEPROM_VARS ) {
     printf("EEPROM");
   } else {
-    printf("HW Defaults");
+    printf("Firmware");
   }
   for(x=0;x<RegMapNum;x++) {
     regPtr=RegMap[x].reg_ptr;
@@ -924,16 +1004,16 @@ void init_variables (int1 source) { // {{{
     // If checksum does not match, use default variables.
     if ( !_init_variables(source) ) {
       crlf();
-      printf(" Bad checksum!");
+      printf("!CKSUM!");
         _init_variables(USE_DEFAULT_VARS);
     store_variables();
     }
 } // }}}
 void init_trimpot(void) {//{{{
-  set_trimpot(0,0);
-  set_trimpot(1,0);
-  set_trimpot(2,0);
-  set_trimpot(3,0);
+  int pot;
+  for(pot=0;pot<4;pot++) {
+    set_trimpot(pot,0);
+  }
 } // }}}
 void initialize (void) { // {{{
 // This function performs all initializations upon
@@ -966,9 +1046,6 @@ void initialize (void) { // {{{
   output_bit(DTMF_WEB,1);
   output_bit(DTMF_REB,1);
   output_bit(DTMF_RS ,0);
-#ifdef LCD_TYPE_PI
-  init_lcd();
-#endif
   //clearscr();
   init_variables(USE_EEPROM_VARS);
   init_dtmf();
@@ -1019,18 +1096,26 @@ void initialize (void) { // {{{
   //AuxOut[0] = PO_AUX_OUT0;
   //AuxOut[1] = PO_AUX_OUT1;
   //AuxOut[2] = PO_AUX_OUT2;
-  AuxInSW[0] = 0;
-  AuxInSW[1] = 0;
-  AuxInSW[2] = 0;
+  {
+    int x;
+    for(x=0;x<3;x++) {
+      AuxInSW[x] = 0;
+    }
+  }
   AUX_IN_FLAG = 0;
   COR_IN_EFFECTIVE=0;
   set_admin_mode(0);
   rs232_mode=0;
   button_state=0;
+#ifdef BUTTON_STATES
   setup_adc(ADC_CLOCK_INTERNAL);
   setup_adc_ports(ADJ_POT|VSS_VDD);
   set_adc_channel(13);
-
+#endif
+#ifdef LCD_TYPE_PI
+  // Keep PI LCD initialization in the final stage of startup.
+  init_lcd();
+#endif
 //  setup_adc_ports(ADJ_POT);
 //  set_adc_channel(13);
 //  printf("\n\rInitialization complete");
@@ -1039,77 +1124,68 @@ void tokenize_sBuffer() { // {{{
   char verb[8];
   int1 do_get_var=0;
   char *sptr;
-  char match_tok[8],match_val[4],smatch_reg[8];
+  char match_val[4];
+  static char tok_set[]="SET";
+#if __DEVICE__  == 1939
+  static char tok_setb[]="SETB";
+  static char tok_clrb[]="CLRB";
+#endif
+  static char tok_save[]="SAVE";
+  static char tok_restore[]="RESTORE";
+  static char tok_status[]="STATUS";
+  static char tok_reboot[]="REBOOT";
+  static char tok_d[]="D";
+  static char tok_i2c[]="I2C";
+  static char tok_morse[]="MORSE";
+  static char tok_n[]="N";
+  static char tok_admin[]="ADMIN";
 
-  // Get verb {{{
-  strcpy(match_tok," ,;\r");
-  sptr=strtok(sBuffer,match_tok);
-  if (sptr!=0) {;
-    strcpy(verb,sptr);
-  }  
-  // }}}  
-  // Get argument {{{
-  sptr=strtok(0,match_tok);
-  if (sptr!=0) {;
-    strcpy(argument_name,sptr);
-  }  
-  // }}}
-  // Get value {{{
-  sptr=strtok(0,match_tok);
-  if (sptr!=0) {;
-    strcpy(match_val,sptr);
+  verb[0]='\0';
+  argument_name[0]='\0';
+  match_val[0]='\0';
+  command=0;
+
+  // Get verb, argument and value {{{
+  sptr=sBuffer;
+  sptr=extract_token(sptr,verb,sizeof(verb));
+  sptr=extract_token(sptr,argument_name,REG_NAME_SIZE);
+  sptr=extract_token(sptr,match_val,sizeof(match_val));
+  if (match_val[0]!=0) {
     value = str_to_decimal(match_val);
   } else {
     value = 0;
     do_get_var = 1;
-  }  
+  }
   // }}}
-  // Check for "SET" command {{{
-  strcpy(smatch_reg,"set");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  if ( token_match(verb,tok_set) ) {
     if ( do_get_var ) {
       command=GET_REG;
     } else {
       command=SET_REG;
     }
-  } // }}}
+  }
 #if __DEVICE__  == 1939
-  // Check for "setb" command {{{
-  strcpy(smatch_reg,"setb");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  else if ( token_match(verb,tok_setb) ) {
       command=SET_BIT;
-  } // }}}
-  // Check for "setb" command {{{
-  strcpy(smatch_reg,"clrb");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_clrb) ) {
       command=CLEAR_BIT;
-  } // }}}
+  }
 #endif
-  // Check for "SAVE" command {{{
-  strcpy(smatch_reg,"SAVE");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  else if ( token_match(verb,tok_save) ) {
       command=SAVE_SETTINGS;
-  } // }}}
-  // Check for "RESTORE" command {{{
-  strcpy(smatch_reg,"RESTORE");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_restore) ) {
       command=RESTORE_SETTINGS;
-  } // }}}
-  // Check for "STATUS" command {{{
-  strcpy(smatch_reg,"status");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_status) ) {
     command=STATUS;
-  } // }}}
-  // Check for "reboot" command {{{
-  strcpy(smatch_reg,"reboot");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_reboot) ) {
     command=ADMIN;
     argument=REBOOT;
-  } // }}}
-  // Check for "dtmf" command {{{
-  strcpy(smatch_reg,"d");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
-    //command=DTMF_SEND;
+  }
+  else if ( token_match(verb,tok_d) ) {
     command=0;
     value = str_to_decimal(argument_name);
     if ( value == d0 ) {
@@ -1118,18 +1194,11 @@ void tokenize_sBuffer() { // {{{
       value = d0;
     }
     dtmf_send_digit(value&0x0F);
-  } // }}}
-  // Check for "i2c" command {{{
-  strcpy(smatch_reg,"i2c");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_i2c) ) {
     command=I2C_SEND;
-  } // }}}
-  // Check for "morse" command {{{
-  // morse [0..35] --> send 0-9 or a-z in morse
-  // morse[36]     --> Silence
-  // morse <value> 37 --> send site ID
-  strcpy(smatch_reg,"morse");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_morse) ) {
     value = str_to_decimal(argument_name);
     if ( value < MORSE_CHAR_ARRAY_LENGTH ) {
       argument = 0;
@@ -1138,31 +1207,23 @@ void tokenize_sBuffer() { // {{{
       command  = ADMIN;
       argument = SEND_MORSE_ID;
     }
-  } // }}}
-  // Check for "+ (INCR)" command {{{
-  strcpy(smatch_reg,"+");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( verb[0]=='+' && verb[1]==0 ) {
     command=INCREMENT_REG;
-  } // }}}
-  // Check for "- (DECR)" command {{{
-  strcpy(smatch_reg,"-");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( verb[0]=='-' && verb[1]==0 ) {
     command=DECREMENT_REG;
-  } // }}}
-  // Check for "n (Next CPOT)" command {{{
-  strcpy(smatch_reg,"n");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_n) ) {
     command=SET_REG;
     value = (CurrentTrimPot + 1)&0x03;
     strcpy(argument_name,"CPOT");
-  } // }}}
-  // AdminMode toggle Check for "admin" command {{{
-  strcpy(smatch_reg,"admin");  
-  if ( my_stricmp(smatch_reg,verb) == 0 ) {
+  }
+  else if ( token_match(verb,tok_admin) ) {
     AdminMode = ~AdminMode;
     set_admin_mode(AdminMode);
     PROMPT_FLAG = 1;
-  } // }}}
+  }
 } // }}}
 #if __DEVICE__  == 1939
 void set_bit (void) { // {{{
@@ -1247,10 +1308,9 @@ void ExecAuxOutOp(char op,char arg,char ID) { // {{{
       int1 pin_value=0;
       char p;
       char ptt_mask=0x01;
-		  char PTT_PIN[4]={PTT0,PTT1,PTT2,PTT3};
       for(p=0;p<4;p++) {
         if ( (ptt_mask & larg)!=0 ) {
-          int1 ptt_int=(input(PTT_PIN[p]));
+          int1 ptt_int=(input(PTT_PIN_MAP[p]));
           if(ptt_int) {
             ptt_active=1;                         
           }
@@ -1361,10 +1421,9 @@ void ExecAuxInOp(char op,char arg,char ID) { // {{{
 } // }}}
 void update_aux_in(void) { // {{{
   int x;
-  char AUX_IN_PIN[3] ={AUX_IN0 ,AUX_IN1 ,AUX_IN2};
   for(x=0;x<3;x++) {
     // AuxIn is enabled via RS232 only for test/emulation purpose
-    AuxInSW[x] = ((input(AUX_IN_PIN[x]) )|| (AuxIn[x]!=0));
+    AuxInSW[x] = ((input(AUX_IN_PIN_MAP[x]) )|| (AuxIn[x]!=0));
   }
 } // }}}
 void update_aux_out(void) { // {{{
@@ -1374,16 +1433,15 @@ void update_aux_out(void) { // {{{
   char AuxIn_s[4]={'0','0','0',0};
   char AuxOut_s[4]={'0','0','0',0};
   char ADM[]=" ADMIN";
-  char AUX_OUT_PIN[3]={AUX_OUT0,AUX_OUT1,AUX_OUT2};
   short out_bit;
   for(x=0;x<3;x++) {
     AuxOp = AuxOutOp[x];
     AuxArg = AuxOutArg[x];
     ExecAuxOutOp(AuxOp,AuxArg,x); // This updates AuxOut global reg.
-    out_bit = (AuxOut[x])==0;
+    out_bit = (AuxOut[x]==0);
 // Bug is here!!!
 // New compiler : AUX_OUT_PIN cannot be a const.
-    output_bit(AUX_OUT_PIN[x],out_bit);
+    output_bit(AUX_OUT_PIN_MAP[x],out_bit);
     if(out_bit==0) {
       AuxOut_s[x]='1';
     }
@@ -1427,7 +1485,7 @@ void main (void) { // {{{
   while(1) { // {{{
 #ignore_warnings none
     restart_wdt();
-  process_buttons();
+    process_buttons();
     // Process RS232 Serial Buffer Flag {{{
     // The sBufferFlag is set when a "\r" or "+" or "-" is received.
     if ( sBufferFlag ) {
@@ -1482,7 +1540,7 @@ void main (void) { // {{{
     if ( PROMPT_FLAG ) {
       prompt();
       PROMPT_FLAG=0;
-    restart_wdt();
+      restart_wdt();
     }
   } // End of while(1) main loop }}}
 } // }}}
@@ -1584,14 +1642,14 @@ void init_lcd(void) { // {{{
   lcd_write(0,0x04);
   i2c_stop();
 } // }}}
-void do_delay_counters(void) {
-  // Second Flag {{{
+void do_delay_counters_sec(void) {
+  // Second Flag block
   if ( SECOND_FLAG ) {
     if ((COR_IN_EFFECTIVE != 0x00) && (QSO_Duration != 0xFFFF )) {
-      QSO_Duration++; 
+      QSO_Duration++;
     }
     AUX_OUT_FLAG=1;
-    // Update COR PullUps {{{
+    // Update COR PullUps
     int x;
     for(x=0;x<4;x++) {
       if(bit_test(Polarity,x)) {
@@ -1600,8 +1658,7 @@ void do_delay_counters(void) {
         bit_clear(WPUB,x);
       }
     }
-    // }}}
-    // Time Out PTT {{{
+    // Time Out PTT
     if ( (TOT_Min > 0) && (QSO_Duration >= (TOT_Min*60))) {
       if ( TOT_FLAG_Mask == 0 ) {
         crlf();
@@ -1611,22 +1668,18 @@ void do_delay_counters(void) {
       }
       TOT_FLAG_Mask=COR_IN_EFFECTIVE;
     }
-    // }}}
-    // AuxOutDelayCnt {{{
+    // AuxOutDelayCnt
     if ( AuxOutDelayCnt ) {
       AuxOutDelayCnt--;
     }
-    // }}}
-    // Admin mode timeout {{{
+    // Admin mode timeout
     if ( admin_timer ) {
       admin_timer--;
     } else {
-      // Exit admin mode.
       if ( AdminMode ) {
         set_admin_mode(0);
       }
     }
-    // }}}
     restart_wdt();
     if ( SecondCounter ) {
       SecondCounter--;
@@ -1636,8 +1689,10 @@ void do_delay_counters(void) {
     }
     SECOND_FLAG=0;
   }
-  // Second Flag }}}
-  // Minute flag {{{
+}
+
+void do_delay_counters_min(void) {
+  // Minute flag block
   if ( MINUTE_FLAG ) {
     if ( MinuteCounter ) {
       MinuteCounter--;
@@ -1646,39 +1701,43 @@ void do_delay_counters(void) {
       MinuteCounter = MIN_COUNTER;
     }
     MINUTE_FLAG = 0;
-    // Link timeout timer {{{
+    // Link timeout timer
     if ( Link_TOT != 0 ) {
       if ( LinkDurationTimer ) {
         LinkDurationTimer--;
       } else {
-        // Disable Link
         crlf();
         printf("# Link TOT!\n");
         Enable&=0xFE;
       }
     }
-    // Link timeout timer }}}
   }
-  // Minute flag }}}
-  if ( THIRTY_MIN_FLAG ) { // {{{
+}
+
+void do_delay_counters_30min(void) {
+  if ( THIRTY_MIN_FLAG ) {
+#ifdef LCD_TYPE_PI
+    // Reinitialize PI LCD periodically to recover from rare I2C/LCD lockups.
+    init_lcd();
+#endif
     if ( (TXSiteID&0x03) !=0 ) {
-      // Transmit Site ID every 30 mins when:
-      // TXSiteID = <EnableMask[3:0]>,{x,x,M,E}
-      // E = Transmit every 30 mins
-      // M = Transmit only if EnableMask is off
       if ( (TXSiteID & 0x01)!=0 || ((TXSiteID & 0x02)!=0 && (((TXSiteID >> 4) & 0x0F) & Enable)==0) ) {
         send_morse_id();
       }
     }
     THIRTY_MIN_FLAG=0;
-  } // }}}
+  }
 }
 
+void do_delay_counters(void) {
+  do_delay_counters_sec();
+  do_delay_counters_min();
+  do_delay_counters_30min();
+}
 void crlf(void) { // {{{
   putc('\n');
   putc('\r');
 } // }}}
-
 void process_buttons(void) { // {{{
 #ifdef BUTTON_STATES
   char enter_b,select_b;
@@ -1717,23 +1776,23 @@ void process_buttons(void) { // {{{
       }
     break;
     case CALIB:
-      adj_value_a = read_adc() >> 2;
+      adj_value_a = read_adc(ADC_START_AND_READ) >> 2;
       adj_value_b = adj_value_a;
       button_state=TRIM;
       pot_values_to_lcd();
       break;
     case TRIM:
        if ( _cor_in != 0 ) {
-         adj_value_a = read_adc() >> 2;
+         adj_value_a = read_adc(ADC_START_AND_READ) >> 2;
          pot_value = 63-adj_value_a;
          if ( adj_value_a != adj_value_b ) {
-           rs232_mode = 1;
+//           rs232_mode = 1;
            set_trimpot(CurrentTrimPot, pot_value);
            pot_values_to_lcd();
-     RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
-           rs232_mode = 0;
+           RX_GAIN[CurrentCorIndex-1][CPotPtr]=pot_value;
+//           rs232_mode = 0;
+           adj_value_b = adj_value_a;
          }
-         adj_value_b = adj_value_a;
        }
        if ( SELECT_PRESSED == 1 ) {
          CurrentTrimPot = (CurrentTrimPot + 1 ) & 0x03;
@@ -1745,6 +1804,7 @@ void process_buttons(void) { // {{{
            store_variables();
          }
          button_state = BUTTON_IDLE;
+				 PROMPT_FLAG=1;
        } 
        status_led();
     break;
