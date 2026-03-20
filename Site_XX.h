@@ -6,6 +6,10 @@
 #define SITE_GID_VAL 	90
 #define POLARITY_DEF_VAL 0x0F 
 #define ENABLE_DEFAULT 15
+#define TOT_MIN 5
+#define LINK_TOT 0
+#define DEFAULT_GAIN 32
+//#define LCD_TYPE_PI 0
 
 #define MORSEID0	MCHAR('v')
 #define MORSEID1	MCHAR('e')
@@ -36,4 +40,13 @@
 #define PO_AUX_OUT2 1
 
 
+#define RX1_PTT 0x0E
+#define RX2_PTT 0x0D
+#define RX3_PTT 0x0B
+#define RX4_PTT 0x07
+
+#define R1Priority 4
+#define R2Priority 6
+#define R3Priority 6
+#define R4Priority 2
 
