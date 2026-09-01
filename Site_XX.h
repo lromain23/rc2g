@@ -4,7 +4,7 @@
 
 #define SITE_ID_VAL  	73
 #define SITE_GID_VAL 	90
-#define POLARITY_DEF_VAL 0x0F 
+#define POLARITY_DEF_VAL 0x0B 
 #define ENABLE_DEFAULT 15
 #define TOT_MIN 5
 #define LINK_TOT 0
@@ -48,5 +48,5 @@
 #define R1Priority 4
 #define R2Priority 6
 #define R3Priority 6
-#define R4Priority 2
+#define R4Priority 5
 
